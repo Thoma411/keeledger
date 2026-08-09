@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-07 01:04:46
+ * @LastEditTime: 2026-08-10 01:15:16
  * @Description: 设置页
  */
 
@@ -12,6 +12,7 @@ import 'package:flutter/services.dart';
 import 'package:ota_update/ota_update.dart';
 import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../services/auth_service.dart';
 import '../services/settings_service.dart';
@@ -42,6 +43,7 @@ class SettingsPageState extends State<SettingsPage> {
   bool _hasDb = false; // 控制WebDAV按钮
   bool _autoFetchIcons = false; // 自动抓取图标
   bool _autoSyncEnabled = false; // 静默同步
+  String _appPath = "";
 
   static const String currentVersion = "v1.1.0";
 
@@ -53,6 +55,7 @@ class SettingsPageState extends State<SettingsPage> {
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
     checkDbStatus();
+    _loadAppPath();
   }
 
   // 切换深色模式
@@ -96,6 +99,26 @@ class SettingsPageState extends State<SettingsPage> {
         ],
       ),
     );
+  }
+
+  // 异步读取当前设备的存储路径方法
+  Future<void> _loadAppPath() async {
+    String path = "";
+    try {
+      if (Platform.isWindows || Platform.isMacOS || Platform.isLinux) {
+        // 电脑端读取应用.exe所在的安装目录
+        path = File(Platform.resolvedExecutable).parent.path;
+      } else {
+        // 移动端读取SQLite所在的私有沙盒文件路径
+        final directory = await getApplicationDocumentsDirectory();
+        path = directory.path; 
+      }
+    } catch (_) {}
+    if (mounted) {
+      setState(() {
+        _appPath = path;
+      });
+    }
   }
 
   // 检查数据库状态 决定是否允许配置WebDAV
@@ -830,6 +853,38 @@ class SettingsPageState extends State<SettingsPage> {
           value: _isDarkMode,
           onChanged: _toggleDarkMode,
           secondary: const Icon(Icons.brightness_6),
+        ),
+        const Divider(),
+        ListTile(
+          title: const Text("应用路径"),
+          subtitle: Text(
+            _appPath.isEmpty ? "正在载入路径..." : _appPath,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: TextStyle(
+              fontFamily: 'Consolas',
+              fontFamilyFallback: const ['Microsoft YaHei'],
+              fontSize: 11,
+              color: Theme.of(
+                context,
+              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+            ),
+          ),
+          leading: const Icon(Icons.folder_open_rounded),
+          onTap: _appPath.isEmpty
+              ? null
+              : () async {
+                  await Clipboard.setData(ClipboardData(text: _appPath));
+                  if (!context.mounted) return;
+                  MessageUtil.show(context, "路径已复制至剪贴板");
+                  if (Platform.isWindows) {
+                    await Process.run('explorer.exe', [_appPath]);
+                  } else if (Platform.isMacOS) {
+                    await Process.run('open', [_appPath]);
+                  } else if (Platform.isLinux) {
+                    await Process.run('xdg-open', [_appPath]);
+                  }
+                },
         ),
         const Divider(),
         SwitchListTile(
