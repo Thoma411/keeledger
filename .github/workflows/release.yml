@@ -44,7 +44,7 @@ jobs:
           SIGNING_STORE_PASSWORD: ${{ secrets.SIGNING_STORE_PASSWORD }}
           SIGNING_KEY_PASSWORD: ${{ secrets.SIGNING_KEY_PASSWORD }}
           SIGNING_KEY_ALIAS: ${{ secrets.SIGNING_KEY_ALIAS }}
-        run: flutter build apk --target-platform android-arm64 
+        run: flutter build apk --target-platform android-arm64
 
       - name: Rename APK
         run: |
@@ -78,7 +78,9 @@ jobs:
       - name: Archive Windows Release
         shell: pwsh
         run: |
-          Compress-Archive -Path build\windows\x64\runner\Release\* -DestinationPath build\windows\x64\runner\keeledger_windows.zip
+          New-Item -ItemType Directory -Path build\windows\x64\runner\keeledger_windows
+          Copy-Item -Path build\windows\x64\runner\Release\* -Destination build\windows\x64\runner\keeledger_windows -Recurse
+          Compress-Archive -Path build\windows\x64\runner\keeledger_windows -DestinationPath build\windows\x64\runner\keeledger_windows.zip
 
       - name: Upload Windows ZIP to Release
         uses: softprops/action-gh-release@v2
