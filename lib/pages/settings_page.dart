@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-10 01:15:16
+ * @LastEditTime: 2026-08-10 23:47:04
  * @Description: 设置页
  */
 
@@ -111,7 +111,7 @@ class SettingsPageState extends State<SettingsPage> {
       } else {
         // 移动端读取SQLite所在的私有沙盒文件路径
         final directory = await getApplicationDocumentsDirectory();
-        path = directory.path; 
+        path = directory.path;
       }
     } catch (_) {}
     if (mounted) {
@@ -839,6 +839,8 @@ class SettingsPageState extends State<SettingsPage> {
         _settings.get('force_desktop_mode') == 'true';
     final bool showAsEnabled = isDesktopDevice || forceDesktopSetting;
 
+    final bool isMobile = AccountUiUtils.isMobile(context);
+
     return ListView(
       padding: const EdgeInsets.all(24),
       children: [
@@ -874,17 +876,28 @@ class SettingsPageState extends State<SettingsPage> {
           onTap: _appPath.isEmpty
               ? null
               : () async {
+                  if (isMobile) {
+                    MessageUtil.show(context, "长按以复制路径");
+                  } else {
+                    await Clipboard.setData(ClipboardData(text: _appPath));
+                    if (!context.mounted) return;
+                    MessageUtil.show(context, "路径已复制至剪贴板");
+                    if (Platform.isWindows) {
+                      await Process.run('explorer.exe', [_appPath]);
+                    } else if (Platform.isMacOS) {
+                      await Process.run('open', [_appPath]);
+                    } else if (Platform.isLinux) {
+                      await Process.run('xdg-open', [_appPath]);
+                    }
+                  }
+                },
+          onLongPress: (isMobile && _appPath.isNotEmpty)
+              ? () async {
                   await Clipboard.setData(ClipboardData(text: _appPath));
                   if (!context.mounted) return;
                   MessageUtil.show(context, "路径已复制至剪贴板");
-                  if (Platform.isWindows) {
-                    await Process.run('explorer.exe', [_appPath]);
-                  } else if (Platform.isMacOS) {
-                    await Process.run('open', [_appPath]);
-                  } else if (Platform.isLinux) {
-                    await Process.run('xdg-open', [_appPath]);
-                  }
-                },
+                }
+              : null,
         ),
         const Divider(),
         SwitchListTile(
