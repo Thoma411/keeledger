@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-10 23:47:04
+ * @LastEditTime: 2026-08-11 23:26:48
  * @Description: 设置页
  */
 
@@ -45,7 +45,7 @@ class SettingsPageState extends State<SettingsPage> {
   bool _autoSyncEnabled = false; // 静默同步
   String _appPath = "";
 
-  static const String currentVersion = "v1.1.0";
+  static const String currentVersion = "v1.1.1";
 
   @override
   void initState() {
