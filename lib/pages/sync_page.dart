@@ -470,7 +470,7 @@ class SyncPageState extends State<SyncPage> {
   Widget build(BuildContext context) {
     final colorScheme = Theme.of(context).colorScheme;
     // 动态感知屏幕宽度
-    final bool isMobile = AccountUiUtils.isMobile(context);
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
     // 顶部对比卡片
     Widget statusSection = Row(
       children: [
@@ -506,7 +506,7 @@ class SyncPageState extends State<SyncPage> {
           "系统将根据修改时间自动决定上传或下载",
           style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
         ),
-        SizedBox(height: isMobile ? 12 : 32),
+        SizedBox(height: isMobileLayout ? 12 : 32),
         _buildActionButton(
           label: "测试云端连接",
           icon: Icons.lan_outlined,
@@ -536,7 +536,7 @@ class SyncPageState extends State<SyncPage> {
     );
     // 同步日志框
     Widget logSection = Container(
-      height: isMobile ? 300 : double.infinity,
+      height: isMobileLayout ? 300 : double.infinity,
       decoration: BoxDecoration(
         color: colorScheme.surfaceContainerHighest.withValues(alpha: 0.3),
         borderRadius: BorderRadius.circular(16),
@@ -599,7 +599,7 @@ class SyncPageState extends State<SyncPage> {
           const SizedBox(height: 24),
           statusSection,
           const SizedBox(height: 32),
-          isMobile
+          isMobileLayout
               ? Column(
                   // 手机端：上操作, 下日志
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -625,6 +625,6 @@ class SyncPageState extends State<SyncPage> {
         ],
       ),
     );
-    return isMobile ? SingleChildScrollView(child: content) : content;
+    return isMobileLayout ? SingleChildScrollView(child: content) : content;
   }
 }

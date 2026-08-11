@@ -635,7 +635,7 @@ class SettingsPageState extends State<SettingsPage> {
     String apkDownloadUrl,
   ) {
     if (!mounted) return;
-    final bool isMobile = AccountUiUtils.isMobile(context);
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
 
     // 声明用于手机端下载状态控制的局部变量
     bool isDownloading = false;
@@ -713,7 +713,7 @@ class SettingsPageState extends State<SettingsPage> {
                     ),
                     ElevatedButton(
                       onPressed: () async {
-                        if (isMobile) {
+                        if (isMobileLayout) {
                           if (apkDownloadUrl.isEmpty) {
                             // 没拿到直链则跳转至浏览器下载
                             await launchUrl(
@@ -830,16 +830,11 @@ class SettingsPageState extends State<SettingsPage> {
     final bool isLoggedIn = _hasDb && SecurityService().currentDataKey != null;
     final colorScheme = Theme.of(context).colorScheme;
     // 桌面模式相关判定
-    final bool isDesktopDevice =
-        Platform.isWindows || Platform.isMacOS || Platform.isLinux;
-    final bool isTabletDevice =
-        (Platform.isAndroid || Platform.isIOS) &&
-        MediaQuery.of(context).size.shortestSide >= 600;
+    final bool isDesktopDevice = !AccountUiUtils.isTouchDevice();
+    final bool isTabletDevice = AccountUiUtils.isTablet(context);
     final bool forceDesktopSetting =
         _settings.get('force_desktop_mode') == 'true';
     final bool showAsEnabled = isDesktopDevice || forceDesktopSetting;
-
-    final bool isMobile = AccountUiUtils.isMobile(context);
 
     return ListView(
       padding: const EdgeInsets.all(24),
@@ -876,7 +871,7 @@ class SettingsPageState extends State<SettingsPage> {
           onTap: _appPath.isEmpty
               ? null
               : () async {
-                  if (isMobile) {
+                  if (AccountUiUtils.isTouchDevice()) {
                     MessageUtil.show(context, "长按以复制路径");
                   } else {
                     await Clipboard.setData(ClipboardData(text: _appPath));
@@ -891,7 +886,7 @@ class SettingsPageState extends State<SettingsPage> {
                     }
                   }
                 },
-          onLongPress: (isMobile && _appPath.isNotEmpty)
+          onLongPress: (AccountUiUtils.isTouchDevice() && _appPath.isNotEmpty)
               ? () async {
                   await Clipboard.setData(ClipboardData(text: _appPath));
                   if (!context.mounted) return;

@@ -100,12 +100,12 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
   @override
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
-    final bool isMobile = AccountUiUtils.isMobile(context);
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
     final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     Widget shellScaffold = Scaffold(
       // 手机模式: 启用标准底栏; 桌面模式: 设为null
-      bottomNavigationBar: isMobile
+      bottomNavigationBar: isMobileLayout
           ? NavigationBar(
               selectedIndex: _selectedIndex,
               onDestinationSelected: _onDestinationSelected,
@@ -119,7 +119,7 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
       body: SafeArea(
         child: Stack(
           children: [
-            isMobile
+            isMobileLayout
                 ? IndexedStack(
                     index: _selectedIndex,
                     children: _pages,
@@ -165,7 +165,7 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
                       ),
                     ],
                   ),
-            if (!isMobile)
+            if (!isMobileLayout)
               // 仅桌面模式下渲染显示按钮
               Positioned(
                 left: 15, // 距离左边距离

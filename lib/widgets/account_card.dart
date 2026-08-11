@@ -23,7 +23,7 @@ class AccountCard extends StatefulWidget {
   final VoidCallback onTap;
   final VoidCallback onTogglePassword; // 点击眼睛图标回调
   final VoidCallback onCopyPassword;
-  final bool isMobile;
+  final bool isMobileLayout;
 
   const AccountCard({
     super.key,
@@ -34,7 +34,7 @@ class AccountCard extends StatefulWidget {
     required this.onTap,
     required this.onTogglePassword,
     required this.onCopyPassword,
-    this.isMobile = false, // 默认不是手机模式
+    this.isMobileLayout = false, // 默认不是移动布局
   });
 
   @override
@@ -115,7 +115,7 @@ class _AccountCardState extends State<AccountCard> {
           child: ClipRRect(
             borderRadius: BorderRadius.circular(11),
             child: Row(
-              children: widget.isMobile
+              children: widget.isMobileLayout
                   ? [
                       Container(width: 5, color: statusColor), // 状态指示线
                       const SizedBox(width: 12),

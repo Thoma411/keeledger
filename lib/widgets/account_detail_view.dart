@@ -960,8 +960,8 @@ class _AccountDetailViewState extends State<AccountDetailView> {
   @override
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
-    final bool isMobile = AccountUiUtils.isMobile(context);
-    if (isMobile) {
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
+    if (isMobileLayout) {
       return Scaffold(
         // 底部常驻操作栏
         bottomNavigationBar: _buildMobileBottomBar(),

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:13:52
- * @LastEditTime: 2026-07-01 00:35:17
+ * @LastEditTime: 2026-08-11 22:59:49
  * @Description: 视觉样式&辅助组件工具类
  */
 
@@ -13,25 +13,28 @@ import '../services/settings_service.dart';
 class AccountUiUtils {
   AccountUiUtils._();
 
-  // 根据设备选择UI显示/展示模式
-  static bool isMobile(BuildContext context) {
-    // 电脑端无论如何都展示电脑端布局
+  // 判断当前设备是否为触屏设备(移动端: 手机&平板)
+  // 此为"真实设备类型"判断, 不受"桌面模式"开关影响, 供交互/操作逻辑使用
+  static bool isTouchDevice() {
     final bool isDesktop =
         Platform.isWindows || Platform.isMacOS || Platform.isLinux;
     if (isDesktop) return false;
+    return Platform.isAndroid || Platform.isIOS;
+  }
 
-    // 如果是移动端设备（Android/iOS）
-    final bool isMobilePlatform = Platform.isAndroid || Platform.isIOS;
-    if (isMobilePlatform) {
-      final bool isTablet = MediaQuery.of(context).size.shortestSide >= 600;
-      if (isTablet) {
-        final bool forceDesktop =
-            SettingsService().get('force_desktop_mode') == 'true';
-        return !forceDesktop;
-      }
-      return true; // 普通手机：强制显示手机布局
-    }
-    return true; // 兜底，其余平台默认展示手机布局
+  // 判断当前设备是否为平板(触屏设备且最短边 >= 600dp)
+  static bool isTablet(BuildContext context) {
+    return isTouchDevice() && MediaQuery.of(context).size.shortestSide >= 600;
+  }
+
+  // 判断当前UI是否应展示移动端布局(触屏设备中, 平板受"桌面模式"开关影响)
+  static bool isMobileLayout(BuildContext context) {
+    if (!isTouchDevice()) return false; // 非触屏设备一定不是移动端布局
+    if (!isTablet(context)) return true; // 普通手机: 强制显示手机布局
+    // 平板: 取决于"桌面模式"开关
+    final bool forceDesktop =
+        SettingsService().get('force_desktop_mode') == 'true';
+    return !forceDesktop;
   }
 
   // 将数字状态码转换为易读文字

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-07-16 16:14:19
+ * @LastEditTime: 2026-08-11 23:01:23
  * @Description: 账户信息页(查看页)
  */
 
@@ -190,9 +190,9 @@ class AccountListPageState extends State<AccountListPage> {
   void _onAccountSelected(int index) {
     final acc = _displayAccounts[index];
     // 动态感知屏幕宽度
-    final bool isMobile = AccountUiUtils.isMobile(context);
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
 
-    if (isMobile) {
+    if (isMobileLayout) {
       Navigator.of(context).push(
         MaterialPageRoute(
           builder: (context) => Scaffold(
@@ -822,7 +822,7 @@ class AccountListPageState extends State<AccountListPage> {
   }
 
   // 构建空库UI界面
-  Widget _buildEmptyStateUI(bool isMobile) {
+  Widget _buildEmptyStateUI(bool isMobileLayout) {
     return Center(
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
@@ -848,7 +848,7 @@ class AccountListPageState extends State<AccountListPage> {
 
           // 本地无库显示两个按钮
           if (!_isDbCreated)
-            isMobile
+            isMobileLayout
                 ? Column(
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
@@ -985,7 +985,7 @@ class AccountListPageState extends State<AccountListPage> {
   @override
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
-    final bool isMobile = AccountUiUtils.isMobile(context);
+    final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
 
     const double panelWidth = 400; // 定义详情页宽度
     const double headerHeight = 70.0; // 搜索框高度
@@ -1028,7 +1028,7 @@ class AccountListPageState extends State<AccountListPage> {
               onCopyPassword: () {
                 MessageUtil.show(context, "密码已复制");
               },
-              isMobile: isMobile,
+              isMobileLayout: isMobileLayout,
             );
           },
         ),
@@ -1070,9 +1070,11 @@ class AccountListPageState extends State<AccountListPage> {
                           const SizedBox(height: headerHeight),
                           Expanded(
                             child: (!_isDbCreated || _allAccounts.isEmpty)
-                                ? _buildEmptyStateUI(isMobile) // 未建库/内容为空时显示引导
+                                ? _buildEmptyStateUI(
+                                    isMobileLayout,
+                                  ) // 未建库/内容为空时显示引导
                                 : Row(
-                                    children: isMobile
+                                    children: isMobileLayout
                                         ? [listWidget, indexerWidget]
                                         : [indexerWidget, listWidget],
                                   ), // 手机端字母索引在右侧
@@ -1133,7 +1135,7 @@ class AccountListPageState extends State<AccountListPage> {
                         child: Row(
                           children: [
                             Expanded(child: _buildSearchBox()),
-                            if (isMobile)
+                            if (isMobileLayout)
                               IconButton(
                                 icon: Icon(
                                   Icons.add_circle_outline,
