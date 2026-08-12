@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-06 22:58:30
+ * @LastEditTime: 2026-08-12 22:48:36
  * @Description: 主框架
  */
 
@@ -10,6 +10,7 @@ import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
+import 'package:path_provider/path_provider.dart';
 
 import '../services/storage_service.dart';
 import '../services/security_service.dart';
@@ -60,6 +61,7 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
         },
       ), // index2
     ];
+    _cleanUpUpdateApk();
   }
 
   @override
@@ -95,6 +97,24 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
     }
     await StorageService().closeDatabase();
     await windowManager.destroy(); // 销毁进程
+  }
+
+  // 删除更新下载的安装包
+  Future<void> _cleanUpUpdateApk() async {
+    try {
+      if (Platform.isAndroid) {
+        final Directory supportDir = await getApplicationSupportDirectory();
+        final File apkFile = File(
+          "${supportDir.path}/ota_update/keeledger.apk",
+        );
+        if (await apkFile.exists()) {
+          await apkFile.delete();
+          debugPrint("Keeledger: 已删除安装包");
+        }
+      }
+    } catch (e) {
+      debugPrint("Keeledger: 删除安装包失败: $e");
+    }
   }
 
   @override
