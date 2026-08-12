@@ -142,18 +142,6 @@ class KeeledgerApp extends StatelessWidget {
         ),
       ),
 
-      // 反馈消息(悬浮圆角)
-      snackBarTheme: SnackBarThemeData(
-        behavior: SnackBarBehavior.floating,
-        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(24)),
-        width: 400,
-        backgroundColor: const Color.fromARGB(255, 32, 32, 32),
-        contentTextStyle: const TextStyle(
-          color: Colors.white, // 强制白色文字
-          fontFamily: 'Segoe UI',
-          fontFamilyFallback: ['Microsoft YaHei'],
-        ),
-      ),
       // 卡片配置
       cardTheme: CardThemeData(
         elevation: 2,
