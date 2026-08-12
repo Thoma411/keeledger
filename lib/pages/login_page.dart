@@ -37,9 +37,7 @@ class _UnlockPageState extends State<UnlockPage> {
         MaterialPageRoute(builder: (context) => const ShellPage()),
       );
     } else {
-      ScaffoldMessenger.of(
-        context,
-      ).showSnackBar(const SnackBar(content: Text("密码错误，请重试")));
+      MessageUtil.show(context, "密码错误，请重试");
     }
   }
 
@@ -216,9 +214,7 @@ class _UnlockPageState extends State<UnlockPage> {
                 MaterialPageRoute(builder: (context) => const ShellPage()),
               );
               if (!context.mounted) return;
-              ScaffoldMessenger.of(context).showSnackBar(
-                const SnackBar(content: Text("恢复密钥已复制至剪切板，保险箱已就绪")),
-              );
+              MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
             },
             child: const Text("复制恢复密钥"),
           ),

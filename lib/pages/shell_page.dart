@@ -255,12 +255,10 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
           _lastPressedAt = now;
           if (!mounted) return;
           // 弹出悬浮提示
-          ScaffoldMessenger.of(context).showSnackBar(
-            const SnackBar(
-              content: Text("再按一次退出应用", textAlign: TextAlign.center),
-              duration: Duration(seconds: 2),
-              width: 150,
-            ),
+          MessageUtil.show(
+            context,
+            "再按一次退出应用",
+            duration: const Duration(seconds: 2),
           );
           return;
         }

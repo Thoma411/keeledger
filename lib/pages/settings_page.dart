@@ -199,9 +199,7 @@ class SettingsPageState extends State<SettingsPage> {
                 pwdController.text,
               );
               // 2. 显示进度提示
-              ScaffoldMessenger.of(
-                context,
-              ).showSnackBar(const SnackBar(content: Text("正在测试连接...")));
+              MessageUtil.show(context, "正在测试连接...");
               bool isOk = await webdav.ping();
               if (!isOk) {
                 if (!context.mounted) return;
@@ -259,31 +257,19 @@ class SettingsPageState extends State<SettingsPage> {
               try {
                 final count = await CsvService().exportToCsv();
                 if (count != null && context.mounted) {
-                  ScaffoldMessenger.of(outerContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "成功导出账户 $count 条",
-                        textAlign: TextAlign.center,
-                      ),
-                      duration: const Duration(seconds: 3),
-                      width: 200,
-                      behavior: SnackBarBehavior.floating,
-                    ),
+                  MessageUtil.show(
+                    outerContext,
+                    "成功导出账户 $count 条",
+                    duration: const Duration(seconds: 3),
                   );
                 }
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(outerContext).showSnackBar(
-                    SnackBar(
-                      content: Text(
-                        "导出失败：${e.toString().replaceAll('Exception: ', '')}",
-                        textAlign: TextAlign.center,
-                      ),
-                      duration: const Duration(seconds: 3),
-                      width: 320,
-                      behavior: SnackBarBehavior.floating,
-                      backgroundColor: Theme.of(outerContext).colorScheme.error,
-                    ),
+                  MessageUtil.show(
+                    outerContext,
+                    "导出失败：${e.toString().replaceAll('Exception: ', '')}",
+                    duration: const Duration(seconds: 3),
+                    isError: true,
                   );
                 }
               }
@@ -552,13 +538,10 @@ class SettingsPageState extends State<SettingsPage> {
   // 异步检查更新
   Future<void> _checkForUpdates() async {
     // 弹出轻量提示正在检查
-    ScaffoldMessenger.of(context).showSnackBar(
-      const SnackBar(
-        content: Text("正在检查更新...", textAlign: TextAlign.center),
-        duration: Duration(seconds: 1),
-        width: 150,
-        behavior: SnackBarBehavior.floating,
-      ),
+    MessageUtil.show(
+      context,
+      "正在检查更新...",
+      duration: const Duration(seconds: 1),
     );
     try {
       final url = Uri.parse(
@@ -794,9 +777,7 @@ class SettingsPageState extends State<SettingsPage> {
               final bool isAutoSync =
                   _settings.get('auto_sync_enabled') == 'true';
               if (isAutoSync) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("正在同步...")));
+                MessageUtil.show(context, "正在同步...");
               }
               await StorageService().closeDatabase(); // 关闭db连接并重置句柄
               if (isAutoSync) {

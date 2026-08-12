@@ -942,9 +942,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
 
                 Navigator.of(context).pop(); // 关闭弹窗
                 widget.onDeleteSuccess();
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("条目已成功删除")));
+                MessageUtil.show(context, "条目已成功删除");
               },
               style: TextButton.styleFrom(
                 foregroundColor: Theme.of(context).colorScheme.error,

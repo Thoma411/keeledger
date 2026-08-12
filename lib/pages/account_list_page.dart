@@ -537,9 +537,7 @@ class AccountListPageState extends State<AccountListPage> {
                       if (!context.mounted) return;
                       Navigator.pop(context);
                       refreshAccountList();
-                      ScaffoldMessenger.of(
-                        context,
-                      ).showSnackBar(const SnackBar(content: Text("账户添加成功")));
+                      MessageUtil.show(context, "账户添加成功");
                     }
                   },
                   child: const Text("保存"),
@@ -610,9 +608,7 @@ class AccountListPageState extends State<AccountListPage> {
             onPressed: () async {
               String pw = pwController.text;
               if (pw != confirmController.text || pw.length < 6) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(const SnackBar(content: Text("密码不一致或长度不足6位")));
+                MessageUtil.show(context, "密码不一致或长度不足6位");
                 return;
               }
 
@@ -653,9 +649,7 @@ class AccountListPageState extends State<AccountListPage> {
                 // 6. 展示恢复密钥 (RK)
                 _showRecoveryKeyDialog(rkString);
               } catch (e) {
-                ScaffoldMessenger.of(
-                  context,
-                ).showSnackBar(SnackBar(content: Text("初始化失败: $e")));
+                MessageUtil.show(context, "初始化失败: $e", isError: true);
               }
             },
             child: const Text("开始创建"),
@@ -738,9 +732,7 @@ class AccountListPageState extends State<AccountListPage> {
                 );
               } catch (e) {
                 if (context.mounted) {
-                  ScaffoldMessenger.of(
-                    context,
-                  ).showSnackBar(SnackBar(content: Text("恢复失败: $e")));
+                  MessageUtil.show(context, "恢复失败: $e", isError: true);
                 }
               }
             },
@@ -792,9 +784,7 @@ class AccountListPageState extends State<AccountListPage> {
               await _checkDbStatus();
               await refreshAccountList();
               if (context.mounted) {
-                ScaffoldMessenger.of(context).showSnackBar(
-                  const SnackBar(content: Text("恢复密钥已复制至剪切板，保险箱已就绪")),
-                );
+                MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
               }
             },
             child: const Text("复制恢复密钥"),
