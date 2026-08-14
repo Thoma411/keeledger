@@ -235,13 +235,17 @@ class AccountListPageState extends State<AccountListPage> {
   // 弹出新增账户对话框
   void showAddAccountDialog() async {
     if (_allAccounts.length >= 4096) {
-      _showGuardDialog("这么能存？", "账户数量已达上限。");
+      AccountUiUtils.showGuardDialog(context, "这么能存？", "账户数量已达上限。");
       return;
     }
     bool hasDb = await StorageService().isDatabaseExists(); // 检测数据库是否存在
     if (!mounted) return;
     if (!hasDb) {
-      _showGuardDialog("操作受阻", "请先在主界面“创建新数据库”并设置主密码，然后再添加账户条目。");
+      AccountUiUtils.showGuardDialog(
+        context,
+        "操作受阻",
+        "请先在主界面“创建新数据库”并设置主密码，然后再添加账户条目。",
+      );
       return; // 拦截后续的新增逻辑
     }
     final formKey = GlobalKey<FormState>();
@@ -500,7 +504,8 @@ class AccountListPageState extends State<AccountListPage> {
                           phone.trim().isNotEmpty; // 检测是否充分填写信息
                       if (!hasAnyCredential) {
                         if (!context.mounted) return;
-                        _showGuardDialog(
+                        AccountUiUtils.showGuardDialog(
+                          context,
                           "信息不足",
                           "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]",
                         );
@@ -788,23 +793,6 @@ class AccountListPageState extends State<AccountListPage> {
               }
             },
             child: const Text("复制恢复密钥"),
-          ),
-        ],
-      ),
-    );
-  }
-
-  // 弹出功能受限对话框
-  void _showGuardDialog(String titleMsg, String contextMsg) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(titleMsg),
-        content: Text(contextMsg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("确认"),
           ),
         ],
       ),

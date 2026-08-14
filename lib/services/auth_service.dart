@@ -63,10 +63,4 @@ class AuthService {
       return false;
     }
   }
-
-  // 初始化新数据库逻辑已整合在 account_list_page 的对话框中，
-  // 这里的 setupNewVault 暂时作为逻辑占位
-  Future<void> setupNewVault(String password) async {
-    await _storage.database;
-  }
 }

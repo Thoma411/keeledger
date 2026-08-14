@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-07-01 17:21:59
+ * @LastEditTime: 2026-08-14 19:34:48
  * @Description: 与SQLite交互的方法
  */
 
@@ -68,17 +68,7 @@ class StorageService {
 
   // 初始化数据库
   Future<Database> _initDB() async {
-    String path;
-    if (Platform.isWindows) {
-      sqfliteFfiInit();
-      final dbFactory = databaseFactoryFfi;
-      final dbPath = await dbFactory.getDatabasesPath();
-      path = join(dbPath, 'keeledger.db');
-    } else {
-      // Android/iOS
-      final directory = await getApplicationDocumentsDirectory();
-      path = join(directory.path, 'keeledger.db');
-    }
+    final String path = await getDatabasePath();
     debugPrint("db real path: $path");
 
     return await openDatabase(

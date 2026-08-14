@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-12 22:48:36
+ * @LastEditTime: 2026-08-14 19:23:13
  * @Description: 主框架
  */
 
@@ -283,6 +283,7 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
     final s = SettingsService();
     bool hasWebDav = s.get('webdav_url') != null && s.get('webdav_pwd') != null;
     bool hasDb = await StorageService().isDatabaseExists();
+    if (!mounted) return;
     // 设置页无需拦截
     if (index == 2) {
       setState(() => _selectedIndex = index);
@@ -291,34 +292,17 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
     }
     // 情况1: 未建库仅允许在主页(0)
     if (!hasDb && index != 0) {
-      _showGuardDialog("访问受限", "请先在主页创建新数据库");
+      AccountUiUtils.showGuardDialog(context, "访问受限", "请先在主页创建新数据库");
       return;
     }
     // 情况2: 未配WebDAV进入云同步页(1)
     if (!hasWebDav && index == 1) {
-      _showGuardDialog("访问受限", "请先在设置中配置并连接 WebDAV 云盘");
+      AccountUiUtils.showGuardDialog(context, "访问受限", "请先在设置中配置并连接 WebDAV 云盘");
       return;
     }
     setState(() => _selectedIndex = index);
     if (index == 0) _accountListPageKey.currentState?.requestPageFocus();
     if (index == 1) _syncPageKey.currentState?.refreshStatus(); // 刷新云同步界面
-  }
-
-  // 弹出功能受限对话框
-  void _showGuardDialog(String titleMsg, String contextMsg) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(titleMsg),
-        content: Text(contextMsg),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("确认"),
-          ),
-        ],
-      ),
-    );
   }
 
   // 清理内存并直接退出登录
@@ -334,14 +318,5 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
       MaterialPageRoute(builder: (context) => const UnlockPage()),
       (route) => false,
     );
-  }
-}
-
-// 回收站界面
-class TrashPage extends StatelessWidget {
-  const TrashPage({super.key});
-  @override
-  Widget build(BuildContext context) {
-    return const Center(child: Text("回收站"));
   }
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:13:52
- * @LastEditTime: 2026-08-11 22:59:49
+ * @LastEditTime: 2026-08-14 19:35:18
  * @Description: 视觉样式&辅助组件工具类
  */
 
@@ -35,6 +35,27 @@ class AccountUiUtils {
     final bool forceDesktop =
         SettingsService().get('force_desktop_mode') == 'true';
     return !forceDesktop;
+  }
+
+  // 弹出"功能受限"提示框
+  static Future<void> showGuardDialog(
+    BuildContext context,
+    String title,
+    String message,
+  ) {
+    return showDialog(
+      context: context,
+      builder: (context) => AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text("确认"),
+          ),
+        ],
+      ),
+    );
   }
 
   // 将数字状态码转换为易读文字
