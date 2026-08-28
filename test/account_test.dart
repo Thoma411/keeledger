@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-14 22:15:44
- * @LastEditTime: 2026-08-27 21:59:00
+ * @LastEditTime: 2026-08-27 22:19:30
  * @Description: Account 模型 CSV 序列化单元测试
  */
 
@@ -12,9 +12,19 @@ void main() {
   group('Account.fromCsv', () {
     test('正确解析完整13列CSV行', () {
       final acc = Account.fromCsv([
-        'GitHub', 'tom', 'tom_id', 'a@b.com', 'pwd123',
-        'https://github.com', '13800000000', '1995-06-15', '备注', '2019-01-01',
-        '0', '工作,开发', '1',
+        'GitHub',
+        'tom',
+        'tom_id',
+        'a@b.com',
+        'pwd123',
+        'https://github.com',
+        '13800000000',
+        '1995-06-15',
+        '备注',
+        '2019-01-01',
+        '0',
+        '工作,开发',
+        '1',
       ]);
 
       expect(acc.platform, 'GitHub');
@@ -56,9 +66,19 @@ void main() {
   group('Account CSV 往返', () {
     test('toCsvRow 后再 fromCsv 关键字段保持一致', () {
       final acc = Account.fromCsv([
-        'GitHub', 'tom', 'tom_id', 'a@b.com', 'pwd123',
-        'https://github.com', '13800000000', '1995-06-15', '备注', '2019-01-01',
-        '1', '工作,开发', '2',
+        'GitHub',
+        'tom',
+        'tom_id',
+        'a@b.com',
+        'pwd123',
+        'https://github.com',
+        '13800000000',
+        '1995-06-15',
+        '备注',
+        '2019-01-01',
+        '1',
+        '工作,开发',
+        '2',
       ]);
 
       final round = Account.fromCsv(acc.toCsvRow());
