@@ -1,13 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-11 23:01:23
+ * @LastEditTime: 2026-08-28 22:42:34
  * @Description: 账户信息页(查看页)
  */
 
-import 'dart:convert';
 import 'package:uuid/uuid.dart';
-import 'package:encrypt/encrypt.dart' as enc;
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webdav_client/webdav_client.dart' as dav;
@@ -20,9 +18,9 @@ import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
 import '../widgets/account_card.dart';
 import '../widgets/account_detail_view.dart';
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/settings_service.dart';
-import '../services/security_service.dart';
 import '../services/webdav_service.dart';
 import '../pages/login_page.dart';
 import '../utils/utils.dart';
@@ -576,8 +574,6 @@ class AccountListPageState extends State<AccountListPage> {
   void _showSetupMasterPasswordDialog() {
     final pwController = TextEditingController();
     final confirmController = TextEditingController();
-    final sec = SecurityService();
-    final storage = StorageService();
 
     showDialog(
       context: context,
@@ -619,39 +615,11 @@ class AccountListPageState extends State<AccountListPage> {
 
               // 开始核心加密初始化
               try {
-                // 1. 触发建库
-                await storage.database;
-
-                // 2. 生成随机原语
-                final salt = sec.generateRandomBytes(32); // 32字节盐
-                final dkBytes = sec.generateRandomBytes(32); // 32字节数据密钥 (DK)
-                final rkBytes = sec.generateRandomBytes(32); // 32字节恢复密钥 (RK)
-
-                final dk = enc.Key(dkBytes);
-                final rk = enc.Key(rkBytes);
-                final rkString = base64.encode(rkBytes); // 用户的救命稻草
-
-                // 3. 派生主密钥 (MK)
-                final mk = sec.deriveMasterKey(pw, salt);
-
-                // 4. 执行"信封包装"加密
-                final edkM = sec.encrypt(base64.encode(dkBytes), mk); // MK锁DK
-                final edkR = sec.encrypt(base64.encode(dkBytes), rk); // RK锁DK
-                final evb = sec.encrypt("VAULT_READY", dk); // DK锁验证块
-                final erk = sec.encrypt(rkString, dk); // DK锁RK(供日后查看)
-
-                // 5. 持久化到 system_metadata
-                await storage.saveMetadata('master_salt', base64.encode(salt));
-                await storage.saveMetadata('edk_m', edkM);
-                await storage.saveMetadata('edk_r', edkR);
-                await storage.saveMetadata('evb', evb);
-                await storage.saveMetadata('erk', erk);
-
-                sec.setDK(dk); // 初始化成功后立即激活内存钥匙
+                final rkString = await AuthService().createVault(pw);
                 if (!context.mounted) return;
                 Navigator.pop(context); // 关闭输入框
 
-                // 6. 展示恢复密钥 (RK)
+                // 展示恢复密钥(RK)
                 _showRecoveryKeyDialog(rkString);
               } catch (e) {
                 MessageUtil.show(context, "初始化失败: $e", isError: true);

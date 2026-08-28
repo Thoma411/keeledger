@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-13 00:51:43
+ * @LastEditTime: 2026-08-28 22:45:28
  * @Description: 设置页
  */
 
@@ -486,47 +486,31 @@ class SettingsPageState extends State<SettingsPage> {
                 MessageUtil.show(context, "密码不一致或长度不足6位");
                 return;
               }
-              final auth = AuthService();
-              final sec = SecurityService();
-              final storage = StorageService();
-              // 验证旧主密码
-              bool isOldValid = await auth.verifyPassword(oldPwController.text);
-              if (!isOldValid) {
+              // 验证旧密码并重新包装
+              bool ok;
+              try {
+                ok = await AuthService().changeMasterPassword(
+                  oldPwController.text,
+                  newPw,
+                );
+              } catch (e) {
+                if (!context.mounted) return;
+                MessageUtil.show(context, "修改失败：$e");
+                return;
+              }
+              if (!ok) {
                 if (!context.mounted) return;
                 MessageUtil.show(context, "当前主密码错误，验证失败");
                 return;
               }
-              final dk = sec.currentDataKey;
-              if (dk == null) {
-                if (!context.mounted) return;
-                MessageUtil.show(context, "错误：加密环境未就绪");
-                return;
-              }
-              try {
-                // 1. 生成新盐值并派生新MK
-                final newSalt = sec.generateRandomBytes(32);
-                final newMk = sec.deriveMasterKey(newPw, newSalt);
-                // 2. 用新MK重新包装现有的DK(dk.bytes是原始32字节)
-                final dkBase64 = base64.encode(dk.bytes);
-                final newEdkM = sec.encrypt(dkBase64, newMk);
-                // 3. 持久化更新
-                await storage.saveMetadata(
-                  'master_salt',
-                  base64.encode(newSalt),
-                );
-                await storage.saveMetadata('edk_m', newEdkM);
-                if (!context.mounted) return;
-                Navigator.pop(context); // 关闭对话框
-                MessageUtil.show(context, "主密码修改成功，请重新登录");
-                sec.clearKeys(); // 清理内存密钥
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const UnlockPage()),
-                  (route) => false,
-                ); // 强制退回登入界面
-              } catch (e) {
-                if (!context.mounted) return;
-                MessageUtil.show(context, "修改失败：$e");
-              }
+              if (!context.mounted) return;
+              Navigator.pop(context); // 关闭对话框
+              MessageUtil.show(context, "主密码修改成功，请重新登录");
+              SecurityService().clearKeys(); // 清理内存密钥
+              Navigator.of(context).pushAndRemoveUntil(
+                MaterialPageRoute(builder: (context) => const UnlockPage()),
+                (route) => false,
+              ); // 强制退回登入界面
             },
             child: const Text("确认修改并重新登录"),
           ),
@@ -570,7 +554,6 @@ class SettingsPageState extends State<SettingsPage> {
             apkDownloadUrl = apkAsset['browser_download_url'] ?? ""; // 提取直链
           } catch (_) {} // 查找失败按空值处理
         }
-
         if (remoteVersion != currentVersion && remoteVersion.isNotEmpty) {
           _showNewVersionDialog(
             remoteVersion,

@@ -1,19 +1,15 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 19:47:45
- * @LastEditTime: 2026-07-01 15:14:36
+ * @LastEditTime: 2026-08-28 22:42:03
  * @Description: 初始登入界面
  */
 
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:encrypt/encrypt.dart' as enc;
 
 import '../pages/shell_page.dart'; // 用于跳转到 MainShell
 import '../services/auth_service.dart';
-import '../services/security_service.dart';
-import '../services/storage_service.dart';
 import '../utils/utils.dart';
 
 // 老用户解锁界面
@@ -80,25 +76,15 @@ class _UnlockPageState extends State<UnlockPage> {
               final rkInput = rkController.text.trim();
               if (rkInput.isEmpty) return;
 
-              final sec = SecurityService();
-              final storage = StorageService();
-              try {
-                // 读取EDK_R(用RK锁住的DK)
-                String? edkR = await storage.getMetadata('edk_r');
-                if (edkR == null) throw "数据损坏：未找到恢复原语";
-                // 尝试用输入的RK作为Key去解密EDK_R还原出DK
-                final rawRkBytes = base64.decode(rkInput);
-                final dkString = sec.decrypt(edkR, enc.Key(rawRkBytes));
-                final dk = enc.Key(base64.decode(dkString));
-                // 验证通过，先将解开的DK放入内存，否则后续无法加密新密码
-                sec.setDK(dk);
-                if (!context.mounted) return;
-                Navigator.pop(context); // 关闭RK输入框
-                _showResetPasswordDialog(); // 弹出重置密码对话框
-              } catch (e) {
-                if (!context.mounted) return;
+              // 用RK验证并解锁DK
+              final ok = await AuthService().verifyRecoveryKey(rkInput);
+              if (!context.mounted) return;
+              if (!ok) {
                 MessageUtil.show(context, "密钥验证失败，请检查输入是否正确");
+                return;
               }
+              Navigator.pop(context); // 关闭RK输入框
+              _showResetPasswordDialog(); // 弹出重置密码对话框
             },
             child: const Text("验证密钥"),
           ),
@@ -144,27 +130,11 @@ class _UnlockPageState extends State<UnlockPage> {
                 MessageUtil.show(context, "密码不一致或长度不足6位");
                 return;
               }
-              final sec = SecurityService();
-              final storage = StorageService();
-              final dk = sec.currentDataKey; // 此时内存中已有刚才解开的DK
               try {
-                // 重新包装逻辑：生成新盐值->新MK->锁住旧DK
-                final newSalt = sec.generateRandomBytes(32);
-                final newMk = sec.deriveMasterKey(
+                // 重新包装并轮转恢复密钥(逻辑收敛至 AuthService)
+                final newRk = await AuthService().resetMasterPassword(
                   newPwController.text,
-                  newSalt,
                 );
-                final dkBase64 = base64.encode(dk!.bytes);
-                final newEdkM = sec.encrypt(dkBase64, newMk);
-                // 持久化覆盖
-                await storage.saveMetadata(
-                  'master_salt',
-                  base64.encode(newSalt),
-                );
-                await storage.saveMetadata('edk_m', newEdkM);
-
-                final newRk = await sec.rotateRecoveryKey(); // 重置RK
-
                 if (!context.mounted) return;
                 Navigator.pop(context);
                 _showNewRKNotice(newRk); // 弹出新RK展示框
