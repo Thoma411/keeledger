@@ -125,10 +125,13 @@ class AuthService {
   Future<bool> verifyRecoveryKey(String recoveryKey) async {
     try {
       final edkR = await _storage.getMetadata('edk_r');
-      if (edkR == null) return false;
+      final evb = await _storage.getMetadata('evb');
+      if (edkR == null || evb == null) return false;
       final rawRkBytes = base64.decode(recoveryKey);
       final dkString = _sec.decrypt(edkR, enc.Key(rawRkBytes));
       final dk = enc.Key(base64.decode(dkString));
+      // 用EVB验证DK是否正确(弥补GCM无认证校验: 错误RK解出的DK无法通过验证块)
+      if (_sec.decrypt(evb, dk) != "VAULT_READY") return false;
       _sec.setDK(dk);
       return true;
     } catch (_) {

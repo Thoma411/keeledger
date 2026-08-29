@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-14 19:34:48
+ * @LastEditTime: 2026-08-29 17:09:37
  * @Description: 与SQLite交互的方法
  */
 
@@ -18,6 +18,7 @@ import 'icon_service.dart';
 class StorageService {
   static final StorageService _instance = StorageService._internal();
   static Database? _database;
+  static String? overrideDbPath; // 可覆盖数据库路径(用于测试/特殊场景)
 
   factory StorageService() => _instance;
   StorageService._internal();
@@ -45,6 +46,8 @@ class StorageService {
 
   // 获取数据库的完整物理路径
   Future<String> getDatabasePath() async {
+    // 优先使用外部覆盖路径(如测试指向临时目录)
+    if (overrideDbPath != null) return overrideDbPath!;
     if (Platform.isWindows) {
       sqfliteFfiInit(); // 仅Windows需要
       final dbPath = await databaseFactoryFfi.getDatabasesPath();
