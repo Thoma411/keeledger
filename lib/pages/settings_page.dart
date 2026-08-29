@@ -1,16 +1,14 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-28 22:45:28
+ * @LastEditTime: 2026-08-29 18:04:05
  * @Description: 设置页
  */
 
 import 'dart:io';
-import 'dart:convert';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:ota_update/ota_update.dart';
-import 'package:http/http.dart' as http;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:path_provider/path_provider.dart';
 
@@ -21,6 +19,7 @@ import '../services/security_service.dart';
 import '../services/icon_service.dart';
 import '../services/webdav_service.dart';
 import '../services/csv_service.dart';
+import '../services/update_service.dart';
 import '../widgets/account_ui_utils.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
@@ -528,46 +527,25 @@ class SettingsPageState extends State<SettingsPage> {
       duration: const Duration(seconds: 1),
     );
     try {
-      final url = Uri.parse(
-        "https://api.github.com/repos/Thoma411/keeledger/releases",
-      );
-      final response = await http.get(url).timeout(const Duration(seconds: 8));
-      if (response.statusCode == 200) {
-        final List<dynamic> releases = jsonDecode(response.body);
-        if (releases.isEmpty) {
-          _showUpdateResultDialog("已是最新版本", "云端暂无任何版本记录。");
-          return;
-        }
-        // 获取云端最新的发布版
-        final latestRelease = releases.first;
-        final String remoteVersion = latestRelease['tag_name'] ?? "";
-        final String downloadUrl = latestRelease['html_url'] ?? "";
-        final String releaseNotes = latestRelease['body'] ?? "暂无更新说明。";
-        // 提取apk链接
-        String apkDownloadUrl = "";
-        final List<dynamic>? assets = latestRelease['assets'];
-        if (assets != null) {
-          try {
-            final apkAsset = assets.firstWhere(
-              (asset) => asset['name'] == 'keeledger-arm64-v8a-release.apk',
-            );
-            apkDownloadUrl = apkAsset['browser_download_url'] ?? ""; // 提取直链
-          } catch (_) {} // 查找失败按空值处理
-        }
-        if (remoteVersion != currentVersion && remoteVersion.isNotEmpty) {
-          _showNewVersionDialog(
-            remoteVersion,
-            releaseNotes,
-            downloadUrl,
-            apkDownloadUrl,
-          );
-        } else {
-          _showUpdateResultDialog("已是最新版本", "当前版本 $currentVersion 已是最新。");
-        }
+      final info = await UpdateService().checkForUpdates();
+      if (!mounted) return;
+      if (info == null) {
+        _showUpdateResultDialog("已是最新版本", "云端暂无任何版本记录。");
+        return;
+      }
+      // 仅当云端版本号高于当前版本才提示升级
+      if (UpdateService.isNewer(info.remoteVersion, currentVersion)) {
+        _showNewVersionDialog(
+          info.remoteVersion,
+          info.releaseNotes,
+          info.downloadUrl,
+          info.apkDownloadUrl,
+        );
       } else {
-        throw Exception("HTTP 状态码 ${response.statusCode}");
+        _showUpdateResultDialog("已是最新版本", "当前版本 $currentVersion 已是最新。");
       }
     } catch (e) {
+      if (!mounted) return;
       _showUpdateResultDialog(
         "检查失败",
         "无法连接到 GitHub 检查更新: ${e.toString().replaceAll('Exception: ', '')}",
