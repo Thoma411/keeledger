@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 19:47:45
- * @LastEditTime: 2026-08-28 22:42:03
+ * @LastEditTime: 2026-08-29 21:56:52
  * @Description: 初始登入界面
  */
 
@@ -11,6 +11,7 @@ import 'package:flutter/services.dart';
 import '../pages/shell_page.dart'; // 用于跳转到 MainShell
 import '../services/auth_service.dart';
 import '../utils/utils.dart';
+import '../widgets/app_dialogs.dart';
 
 // 老用户解锁界面
 class UnlockPage extends StatefulWidget {
@@ -40,56 +41,32 @@ class _UnlockPageState extends State<UnlockPage> {
   // 弹出输入恢复密钥(RK)的对话框
   void _showForgotPasswordDialog() {
     final rkController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("重置主密码"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "请输入您事先保存的恢复密钥 (RK)：",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 16),
-              TextField(
-                controller: rkController,
-                decoration: const InputDecoration(
-                  labelText: "恢复密钥",
-                  hintText: "一串 Base64 编码的字符",
-                ),
-              ),
-            ],
-          ),
+    AppDialogs.showInputForm(
+      context,
+      title: "重置主密码",
+      message: "请输入您事先保存的恢复密钥 (RK)：",
+      fields: [
+        AppDialogField(
+          controller: rkController,
+          label: "恢复密钥",
+          hint: "一串 Base64 编码的字符",
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              final rkInput = rkController.text.trim();
-              if (rkInput.isEmpty) return;
+      ],
+      confirmText: "验证密钥",
+      onConfirm: (dialogContext) async {
+        final rkInput = rkController.text.trim();
+        if (rkInput.isEmpty) return;
 
-              // 用RK验证并解锁DK
-              final ok = await AuthService().verifyRecoveryKey(rkInput);
-              if (!context.mounted) return;
-              if (!ok) {
-                MessageUtil.show(context, "密钥验证失败，请检查输入是否正确");
-                return;
-              }
-              Navigator.pop(context); // 关闭RK输入框
-              _showResetPasswordDialog(); // 弹出重置密码对话框
-            },
-            child: const Text("验证密钥"),
-          ),
-        ],
-      ),
+        // 用RK验证并解锁DK
+        final ok = await AuthService().verifyRecoveryKey(rkInput);
+        if (!dialogContext.mounted) return;
+        if (!ok) {
+          MessageUtil.show(dialogContext, "密钥验证失败，请检查输入是否正确");
+          return;
+        }
+        Navigator.pop(dialogContext); // 关闭RK输入框
+        _showResetPasswordDialog(); // 弹出重置密码对话框
+      },
     );
   }
 
@@ -97,99 +74,64 @@ class _UnlockPageState extends State<UnlockPage> {
   void _showResetPasswordDialog() {
     final newPwController = TextEditingController();
     final confirmController = TextEditingController();
-    showDialog(
-      context: context,
+    AppDialogs.showInputForm(
+      context,
+      title: "设置新主密码",
+      message: "密钥验证成功！请立即设置新的主密码：",
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("设置新主密码"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("密钥验证成功！请立即设置新的主密码：", style: TextStyle(fontSize: 12)),
-              const SizedBox(height: 16),
-              TextField(
-                controller: newPwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "新主密码"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "确认新主密码"),
-              ),
-            ],
-          ),
+      fields: [
+        AppDialogField(
+          controller: newPwController,
+          label: "新主密码",
+          obscure: true,
         ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              if (newPwController.text != confirmController.text ||
-                  newPwController.text.length < 6) {
-                MessageUtil.show(context, "密码不一致或长度不足6位");
-                return;
-              }
-              try {
-                // 重新包装并轮转恢复密钥(逻辑收敛至 AuthService)
-                final newRk = await AuthService().resetMasterPassword(
-                  newPwController.text,
-                );
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                _showNewRKNotice(newRk); // 弹出新RK展示框
-              } catch (e) {
-                if (mounted) MessageUtil.show(context, "重置失败：$e");
-              }
-            },
-            child: const Text("生成新的恢复密钥"),
-          ),
-        ],
-      ),
+        AppDialogField(
+          controller: confirmController,
+          label: "确认新主密码",
+          obscure: true,
+        ),
+      ],
+      confirmText: "生成新的恢复密钥",
+      onConfirm: (dialogContext) async {
+        if (newPwController.text != confirmController.text ||
+            newPwController.text.length < 6) {
+          MessageUtil.show(dialogContext, "密码不一致或长度不足6位");
+          return;
+        }
+        try {
+          // 重新包装并轮转恢复密钥
+          final newRk = await AuthService().resetMasterPassword(
+            newPwController.text,
+          );
+          if (!dialogContext.mounted) return;
+          Navigator.pop(dialogContext);
+          _showNewRKNotice(newRk); // 弹出新RK展示框
+        } catch (e) {
+          if (dialogContext.mounted) MessageUtil.show(dialogContext, "重置失败：$e");
+        }
+      },
     );
   }
 
   // 重置完密码后的新RK展示框
   void _showNewRKNotice(String newRk) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("请保存新的恢复密钥"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            const Text("如果您忘记了主密码，这是找回数据的唯一方法，请务必妥善保存。"),
-            const SizedBox(height: 20),
-            SelectableText(
-              newRk,
-              style: TextStyle(
-                fontFamily: 'Consolas',
-                fontFamilyFallback: ['Microsoft YaHei'],
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: newRk));
-              if (!context.mounted) return;
-              Navigator.pop(context); // 关闭展示框
-              // 此时才正式进入主界面
-              Navigator.of(context).pushReplacement(
-                MaterialPageRoute(builder: (context) => const ShellPage()),
-              );
-              if (!context.mounted) return;
-              MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
-            },
-            child: const Text("复制恢复密钥"),
-          ),
-        ],
-      ),
+    AppDialogs.showSecret(
+      context,
+      title: "请保存新的恢复密钥",
+      message: "如果您忘记了主密码，这是找回数据的唯一方法，请务必妥善保存。",
+      secret: newRk,
+      onCopied: (dialogContext) async {
+        await Clipboard.setData(ClipboardData(text: newRk));
+        if (!dialogContext.mounted) return;
+        Navigator.pop(dialogContext); // 关闭展示框
+        // 此时才正式进入主界面
+        if (!mounted) return;
+        Navigator.of(context).pushReplacement(
+          MaterialPageRoute(builder: (context) => const ShellPage()),
+        );
+        if (!mounted) return;
+        MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
+      },
     );
   }
 

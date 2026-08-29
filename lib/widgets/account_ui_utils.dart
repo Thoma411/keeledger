@@ -37,27 +37,6 @@ class AccountUiUtils {
     return !forceDesktop;
   }
 
-  // 弹出"功能受限"提示框
-  static Future<void> showGuardDialog(
-    BuildContext context,
-    String title,
-    String message,
-  ) {
-    return showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(message),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("确认"),
-          ),
-        ],
-      ),
-    );
-  }
-
   // 将数字状态码转换为易读文字
   static String getStatusText(int status) {
     const map = {0: "未注册", 1: "使用中", 2: "已注销", 3: "无法使用"};

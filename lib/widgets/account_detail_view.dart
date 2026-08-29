@@ -17,6 +17,7 @@ import '../models/account.dart';
 import '../services/storage_service.dart';
 import '../utils/utils.dart';
 import 'account_ui_utils.dart';
+import 'app_dialogs.dart';
 
 class AccountDetailView extends StatefulWidget {
   final Account account;
@@ -706,18 +707,10 @@ class _AccountDetailViewState extends State<AccountDetailView> {
           bool exists = await StorageService().isPlatformNameExists(newName);
           if (exists) {
             if (!mounted) return;
-            showDialog(
-              context: context,
-              builder: (ctx) => AlertDialog(
-                title: const Text("平台名冲突"),
-                content: Text("修改失败：平台 '$newName' 已存在，请更换名称。"),
-                actions: [
-                  TextButton(
-                    onPressed: () => Navigator.pop(ctx),
-                    child: const Text("确认"),
-                  ),
-                ],
-              ),
+            AppDialogs.showInfo(
+              context,
+              title: "平台名冲突",
+              message: "修改失败：平台 '$newName' 已存在，请更换名称。",
             );
             return;
           }
@@ -731,18 +724,10 @@ class _AccountDetailViewState extends State<AccountDetailView> {
             _phoneController.text.trim().isNotEmpty;
         if (!hasAnyCredential) {
           if (!mounted) return;
-          showDialog(
-            context: context,
-            builder: (ctx) => AlertDialog(
-              title: const Text("保存失败"),
-              content: const Text("请至少填写一项关键信息：[ 昵称 | ID | 密码 | 邮箱 | 手机 ]"),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(ctx),
-                  child: const Text("确认"),
-                ),
-              ],
-            ),
+          AppDialogs.showInfo(
+            context,
+            title: "保存失败",
+            message: "请至少填写一项关键信息：[ 昵称 | ID | 密码 | 邮箱 | 手机 ]",
           );
           return;
         }
@@ -924,33 +909,17 @@ class _AccountDetailViewState extends State<AccountDetailView> {
 
   // 弹出删除确认对话框
   void _confirmDelete(Account account) {
-    showDialog(
-      context: context,
-      builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text("确认删除"),
-          content: Text("确定要删除 ${account.platform} 的账户信息吗？此操作不可撤销。"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.of(context).pop(), // 关闭弹窗
-              child: const Text("取消"),
-            ),
-            TextButton(
-              onPressed: () async {
-                await StorageService().deleteAccount(account.id); // 执行删除
-                if (!context.mounted) return;
-
-                Navigator.of(context).pop(); // 关闭弹窗
-                widget.onDeleteSuccess();
-                MessageUtil.show(context, "条目已成功删除");
-              },
-              style: TextButton.styleFrom(
-                foregroundColor: Theme.of(context).colorScheme.error,
-              ),
-              child: const Text("确定删除"),
-            ),
-          ],
-        );
+    AppDialogs.showConfirm(
+      context,
+      title: "确认删除",
+      message: "确定要删除 ${account.platform} 的账户信息吗？此操作不可撤销。",
+      confirmText: "确定删除",
+      danger: true,
+      onConfirm: () async {
+        await StorageService().deleteAccount(account.id); // 执行删除
+        if (!mounted) return;
+        widget.onDeleteSuccess();
+        MessageUtil.show(context, "条目已成功删除");
       },
     );
   }

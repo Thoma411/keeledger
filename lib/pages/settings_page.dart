@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-29 18:04:05
+ * @LastEditTime: 2026-08-29 21:41:09
  * @Description: 设置页
  */
 
@@ -21,6 +21,7 @@ import '../services/webdav_service.dart';
 import '../services/csv_service.dart';
 import '../services/update_service.dart';
 import '../widgets/account_ui_utils.dart';
+import '../widgets/app_dialogs.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
 import 'help_page.dart';
@@ -72,31 +73,18 @@ class SettingsPageState extends State<SettingsPage> {
 
   // 清除缓存图标
   void _handleClearIcons() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("清除图标缓存"),
-        content: const Text("这将删除本地存储的全部网站的图标。"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                await IconService().clearAllIcons();
-                if (!context.mounted) return;
-                Navigator.pop(context);
-                MessageUtil.show(context, "缓存已清空");
-              } catch (e) {
-                MessageUtil.show(context, "清除失败: $e");
-              }
-            },
-            child: const Text("确认"),
-          ),
-        ],
-      ),
+    AppDialogs.showConfirm(
+      context,
+      title: "清除图标缓存",
+      message: "这将删除本地存储的全部网站的图标。",
+      onConfirm: () async {
+        try {
+          await IconService().clearAllIcons();
+          if (mounted) MessageUtil.show(context, "缓存已清空");
+        } catch (e) {
+          if (mounted) MessageUtil.show(context, "清除失败: $e");
+        }
+      },
     );
   }
 
@@ -132,7 +120,7 @@ class SettingsPageState extends State<SettingsPage> {
     await _settings.set('webdav_url', url);
     await _settings.set('webdav_user', user);
     await _settings.set('webdav_pwd', pwd, isEncrypted: true);
-    checkDbStatus(); // 刷新本页的 hasDb 状态，解除按钮禁用
+    checkDbStatus(); // 刷新本页的hasDb状态，解除按钮禁用
   }
 
   // 弹出WebDAV配置对话框
@@ -148,139 +136,94 @@ class SettingsPageState extends State<SettingsPage> {
     );
     final webdav = WebDavService();
 
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("配置WebDAV云同步"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "建议使用坚果云等支持WebDAV的网盘。同步数据将以加密形式上传。",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: urlController,
-                decoration: const InputDecoration(
-                  labelText: "服务器地址 (如: https://dav.jianguoyun.com/dav/)",
-                ),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: userController,
-                decoration: const InputDecoration(labelText: "账号 (邮箱)"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: pwdController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "应用密码"),
-              ),
-            ],
-          ),
+    AppDialogs.showInputForm(
+      context,
+      title: "配置WebDAV云同步",
+      message: "建议使用坚果云等支持WebDAV的网盘。同步数据将以加密形式上传。",
+      fields: [
+        AppDialogField(
+          controller: urlController,
+          label: "服务器地址 (如: https://dav.jianguoyun.com/dav/)",
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              // 1. 临时初始化客户端进行测试
-              webdav.initCustomClient(
-                urlController.text,
-                userController.text,
-                pwdController.text,
-              );
-              // 2. 显示进度提示
-              MessageUtil.show(context, "正在测试连接...");
-              bool isOk = await webdav.ping();
-              if (!isOk) {
-                if (!context.mounted) return;
-                MessageUtil.show(context, "连接失败，请检查配置");
-                return;
-              }
-              // 验证通过直接保存凭据，冲突处理在云同步界面执行
-              await _finalizeWebDavSave(
-                urlController.text,
-                userController.text,
-                pwdController.text,
-              );
-              WebDavService().reset();
-              if (!context.mounted) return;
-              Navigator.pop(context); // 关闭输入框
-              MessageUtil.show(context, "WebDAV 配置已保存，请前往云同步界面管理数据");
-            },
-            child: const Text("保存配置"),
-          ),
-        ],
-      ),
+        AppDialogField(controller: userController, label: "账号 (邮箱)"),
+        AppDialogField(controller: pwdController, label: "应用密码", obscure: true),
+      ],
+      confirmText: "保存配置",
+      onConfirm: (dialogContext) async {
+        // 1. 临时初始化客户端进行测试
+        webdav.initCustomClient(
+          urlController.text,
+          userController.text,
+          pwdController.text,
+        );
+        // 2. 显示进度提示
+        MessageUtil.show(dialogContext, "正在测试连接...");
+        bool isOk = await webdav.ping();
+        if (!isOk) {
+          if (dialogContext.mounted) {
+            MessageUtil.show(dialogContext, "连接失败，请检查配置");
+          }
+          return;
+        }
+        // 验证通过直接保存凭据，冲突处理在云同步界面执行
+        await _finalizeWebDavSave(
+          urlController.text,
+          userController.text,
+          pwdController.text,
+        );
+        WebDavService().reset();
+        if (!dialogContext.mounted) return;
+        Navigator.pop(dialogContext); // 关闭输入框
+        if (mounted) {
+          MessageUtil.show(context, "WebDAV 配置已保存，请前往云同步界面管理数据");
+        }
+      },
     );
   }
 
   // 导出警告对话框
   void _handleExport() {
-    final outerContext = context;
-    showDialog(
-      context: context,
-      builder: (dialogContext) => AlertDialog(
-        title: const Text("导出安全警告"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
-          children: [
-            Text(
-              "导出操作会将您的所有账户密码以【明文】形式保存为 CSV 文件。",
-              style: TextStyle(
-                color: Theme.of(context).colorScheme.error,
-                fontWeight: FontWeight.bold,
-              ),
+    AppDialogs.showConfirm(
+      context,
+      title: "导出安全警告",
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
+        children: [
+          Text(
+            "导出操作会将您的所有账户密码以【明文】形式保存为 CSV 文件。",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.error,
+              fontWeight: FontWeight.bold,
             ),
-            SizedBox(height: 10),
-            Text("任何人打开此文件均可见您的敏感信息，请在安全的环境下操作，并在使用后妥善保管或销毁该文件。"),
-          ],
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(dialogContext),
-            child: const Text("取消"),
           ),
-          ElevatedButton(
-            onPressed: () async {
-              Navigator.pop(dialogContext); // 先关警告框
-              try {
-                final count = await CsvService().exportToCsv();
-                if (count != null && context.mounted) {
-                  MessageUtil.show(
-                    outerContext,
-                    "成功导出账户 $count 条",
-                    duration: const Duration(seconds: 3),
-                  );
-                }
-              } catch (e) {
-                if (context.mounted) {
-                  MessageUtil.show(
-                    outerContext,
-                    "导出失败：${e.toString().replaceAll('Exception: ', '')}",
-                    duration: const Duration(seconds: 3),
-                    isError: true,
-                  );
-                }
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text("确认导出"),
-          ),
+          const SizedBox(height: 10),
+          const Text("任何人打开此文件均可见您的敏感信息，请在安全的环境下操作，并在使用后妥善保管或销毁该文件。"),
         ],
       ),
+      confirmText: "确认导出",
+      danger: true,
+      onConfirm: () async {
+        try {
+          final count = await CsvService().exportToCsv();
+          if (count != null && mounted) {
+            MessageUtil.show(
+              context,
+              "成功导出账户 $count 条",
+              duration: const Duration(seconds: 3),
+            );
+          }
+        } catch (e) {
+          if (mounted) {
+            MessageUtil.show(
+              context,
+              "导出失败：${e.toString().replaceAll('Exception: ', '')}",
+              duration: const Duration(seconds: 3),
+              isError: true,
+            );
+          }
+        }
+      },
     );
   }
 
@@ -304,47 +247,19 @@ class SettingsPageState extends State<SettingsPage> {
     try {
       final String rk = sec.decrypt(erk, dk); // 执行解密
       if (!mounted) return;
-      showDialog(
-        context: context,
-        builder: (context) => AlertDialog(
-          title: const Text("您的恢复密钥 (RK)"),
-          content: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "这是您找回数据的唯一凭证，请勿泄露给他人。",
-                style: TextStyle(
-                  fontSize: 14,
-                  color: Theme.of(context).colorScheme.onSurfaceVariant,
-                ),
-              ),
-              const SizedBox(height: 20),
-              SelectableText(
-                rk,
-                style: TextStyle(
-                  fontFamily: 'Consolas',
-                  fontFamilyFallback: ['Microsoft YaHei'],
-                  fontSize: 16,
-                  fontWeight: FontWeight.bold,
-                  color: Theme.of(context).colorScheme.primary,
-                ),
-              ),
-            ],
-          ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: const Text("关闭"),
-            ),
-            ElevatedButton(
-              onPressed: () {
-                Clipboard.setData(ClipboardData(text: rk));
-                MessageUtil.show(context, "密钥已复制到剪切板");
-              },
-              child: const Text("复制"),
-            ),
-          ],
-        ),
+      AppDialogs.showSecret(
+        context,
+        title: "您的恢复密钥 (RK)",
+        message: "这是您找回数据的唯一凭证，请勿泄露给他人。",
+        secret: rk,
+        showCloseButton: true,
+        copyText: "复制",
+        onCopied: (dialogContext) async {
+          await Clipboard.setData(ClipboardData(text: rk));
+          if (dialogContext.mounted) {
+            MessageUtil.show(dialogContext, "密钥已复制到剪切板");
+          }
+        },
       );
     } catch (e) {
       if (mounted) MessageUtil.show(context, "解密失败：$e");
@@ -353,82 +268,41 @@ class SettingsPageState extends State<SettingsPage> {
 
   // 弹出手动重置RK的确认对话框
   void _handleManualRotateRK() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("重置恢复密钥"),
-        content: const Text("确认重置将生成新恢复密钥，原恢复密钥会立即失效。仅在你认为恢复密钥泄露时重置。"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                // 执行轮转逻辑
-                final String newRk = await SecurityService()
-                    .rotateRecoveryKey();
-                if (!context.mounted) return;
-                Navigator.pop(context); // 关闭确认弹窗
-                _showNewRKDisplay(newRk); // 弹出展示新密钥的对话框
-              } catch (e) {
-                if (mounted) MessageUtil.show(context, "重置失败：$e");
-              }
-            },
-            style: ElevatedButton.styleFrom(
-              backgroundColor: Theme.of(context).colorScheme.error,
-              foregroundColor: Theme.of(context).colorScheme.onError,
-            ),
-            child: const Text("确认重置"),
-          ),
-        ],
-      ),
+    AppDialogs.showConfirm(
+      context,
+      title: "重置恢复密钥",
+      message: "确认重置将生成新恢复密钥，原恢复密钥会立即失效。仅在你认为恢复密钥泄露时重置。",
+      confirmText: "确认重置",
+      danger: true,
+      onConfirm: () async {
+        try {
+          // 执行轮转逻辑
+          final String newRk = await SecurityService().rotateRecoveryKey();
+          if (mounted) {
+            _showNewRKDisplay(newRk); // 弹出展示新密钥的对话框
+          }
+        } catch (e) {
+          if (mounted) MessageUtil.show(context, "重置失败：$e");
+        }
+      },
     );
   }
 
   // 重置RK后新RK的展示框
   void _showNewRKDisplay(String rk) {
-    showDialog(
-      context: context,
-      barrierDismissible: false, // 强制用户点击确认
-      builder: (context) => AlertDialog(
-        title: const Text("新恢复密钥已生成"),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              "原恢复密钥已丢弃，请妥善保存新恢复密钥：",
-              style: TextStyle(
-                fontSize: 12,
-                color: Theme.of(context).colorScheme.onSurfaceVariant,
-              ),
-            ),
-            const SizedBox(height: 20),
-            SelectableText(
-              rk,
-              style: TextStyle(
-                fontFamily: 'Consolas',
-                fontFamilyFallback: ['Microsoft YaHei'],
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-                fontSize: 16,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: rk));
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              MessageUtil.show(context, "恢复密钥已复制至剪切板，请妥善保存");
-            },
-            child: const Text("复制恢复密钥"),
-          ),
-        ],
-      ),
+    AppDialogs.showSecret(
+      context,
+      title: "新恢复密钥已生成",
+      message: "原恢复密钥已丢弃，请妥善保存新恢复密钥：",
+      secret: rk,
+      onCopied: (dialogContext) async {
+        await Clipboard.setData(ClipboardData(text: rk));
+        if (!dialogContext.mounted) return;
+        Navigator.pop(dialogContext);
+        if (mounted) {
+          MessageUtil.show(context, "恢复密钥已复制至剪切板，请妥善保存");
+        }
+      },
     );
   }
 
@@ -437,84 +311,62 @@ class SettingsPageState extends State<SettingsPage> {
     final oldPwController = TextEditingController();
     final newPwController = TextEditingController();
     final confirmPwController = TextEditingController();
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("修改主密码"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              Text(
-                "修改主密码后将强制退出，请使用新主密码重新登录。",
-                style: TextStyle(
-                  fontSize: 12,
-                  color: Theme.of(context).colorScheme.error,
-                ),
-              ),
-              const SizedBox(height: 20),
-              TextField(
-                controller: oldPwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "当前主密码"),
-              ),
-              const Divider(height: 32),
-              TextField(
-                controller: newPwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "新主密码 (至少6位)"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmPwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "确认新主密码"),
-              ),
-            ],
-          ),
+    AppDialogs.showInputForm(
+      context,
+      title: "修改主密码",
+      message: "修改主密码后将强制退出，请使用新主密码重新登录。",
+      messageColor: Theme.of(context).colorScheme.error,
+      fields: [
+        AppDialogField(
+          controller: oldPwController,
+          label: "当前主密码",
+          obscure: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String newPw = newPwController.text;
-              if (newPw != confirmPwController.text || newPw.length < 6) {
-                MessageUtil.show(context, "密码不一致或长度不足6位");
-                return;
-              }
-              // 验证旧密码并重新包装
-              bool ok;
-              try {
-                ok = await AuthService().changeMasterPassword(
-                  oldPwController.text,
-                  newPw,
-                );
-              } catch (e) {
-                if (!context.mounted) return;
-                MessageUtil.show(context, "修改失败：$e");
-                return;
-              }
-              if (!ok) {
-                if (!context.mounted) return;
-                MessageUtil.show(context, "当前主密码错误，验证失败");
-                return;
-              }
-              if (!context.mounted) return;
-              Navigator.pop(context); // 关闭对话框
-              MessageUtil.show(context, "主密码修改成功，请重新登录");
-              SecurityService().clearKeys(); // 清理内存密钥
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const UnlockPage()),
-                (route) => false,
-              ); // 强制退回登入界面
-            },
-            child: const Text("确认修改并重新登录"),
-          ),
-        ],
-      ),
+        AppDialogField(
+          controller: newPwController,
+          label: "新主密码 (至少6位)",
+          obscure: true,
+        ),
+        AppDialogField(
+          controller: confirmPwController,
+          label: "确认新主密码",
+          obscure: true,
+        ),
+      ],
+      confirmText: "确认修改并重新登录",
+      onConfirm: (dialogContext) async {
+        String newPw = newPwController.text;
+        if (newPw != confirmPwController.text || newPw.length < 6) {
+          MessageUtil.show(dialogContext, "密码不一致或长度不足6位");
+          return;
+        }
+        // 验证旧密码并重新包装
+        bool ok;
+        try {
+          ok = await AuthService().changeMasterPassword(
+            oldPwController.text,
+            newPw,
+          );
+        } catch (e) {
+          if (dialogContext.mounted) MessageUtil.show(dialogContext, "修改失败：$e");
+          return;
+        }
+        if (!ok) {
+          if (dialogContext.mounted) {
+            MessageUtil.show(dialogContext, "当前主密码错误，验证失败");
+          }
+          return;
+        }
+        if (!dialogContext.mounted) return;
+        Navigator.pop(dialogContext); // 关闭对话框
+        if (!mounted) return;
+        MessageUtil.show(context, "主密码修改成功，请重新登录");
+        SecurityService().clearKeys(); // 清理内存密钥
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const UnlockPage()),
+          (route) => false,
+        ); // 强制退回登入界面
+      },
     );
   }
 
@@ -530,7 +382,7 @@ class SettingsPageState extends State<SettingsPage> {
       final info = await UpdateService().checkForUpdates();
       if (!mounted) return;
       if (info == null) {
-        _showUpdateResultDialog("已是最新版本", "云端暂无任何版本记录。");
+        AppDialogs.showInfo(context, title: "已是最新版本", message: "云端暂无任何版本记录。");
         return;
       }
       // 仅当云端版本号高于当前版本才提示升级
@@ -542,33 +394,21 @@ class SettingsPageState extends State<SettingsPage> {
           info.apkDownloadUrl,
         );
       } else {
-        _showUpdateResultDialog("已是最新版本", "当前版本 $currentVersion 已是最新。");
+        AppDialogs.showInfo(
+          context,
+          title: "已是最新版本",
+          message: "当前版本 $currentVersion 已是最新。",
+        );
       }
     } catch (e) {
       if (!mounted) return;
-      _showUpdateResultDialog(
-        "检查失败",
-        "无法连接到 GitHub 检查更新: ${e.toString().replaceAll('Exception: ', '')}",
+      AppDialogs.showInfo(
+        context,
+        title: "检查失败",
+        message:
+            "无法连接到 GitHub 检查更新: ${e.toString().replaceAll('Exception: ', '')}",
       );
     }
-  }
-
-  // 弹出普通状态更新提示框
-  void _showUpdateResultDialog(String title, String content) {
-    if (!mounted) return;
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("确认"),
-          ),
-        ],
-      ),
-    );
   }
 
   // 弹出新版本升级引导框
@@ -722,48 +562,34 @@ class SettingsPageState extends State<SettingsPage> {
   }
 
   // 登出保险箱
-  void _handleLogout() async {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("退出登录"),
-        content: const Text("确认退出保险箱吗？"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          TextButton(
-            onPressed: () async {
-              final bool isAutoSync =
-                  _settings.get('auto_sync_enabled') == 'true';
-              if (isAutoSync) {
-                MessageUtil.show(context, "正在同步...");
-              }
-              await StorageService().closeDatabase(); // 关闭db连接并重置句柄
-              if (isAutoSync) {
-                await WebDavService().uploadIfSafe();
-                if (context.mounted) {
-                  ScaffoldMessenger.of(context).clearSnackBars();
-                }
-              }
-              WebDavService().reset();
-              SecurityService().clearKeys(); // 清空内存中的DK
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              Navigator.of(context).pushAndRemoveUntil(
-                MaterialPageRoute(builder: (context) => const UnlockPage()),
-                (route) => false, // 不允许返回
-              ); // 踢回解锁页并销毁当前所有UI栈
-              MessageUtil.show(context, "保险箱已锁定");
-            },
-            child: Text(
-              "确认退出",
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
+  void _handleLogout() {
+    AppDialogs.showConfirm(
+      context,
+      title: "退出登录",
+      message: "确认退出保险箱吗？",
+      confirmText: "确认退出",
+      danger: true,
+      onConfirm: () async {
+        final bool isAutoSync = _settings.get('auto_sync_enabled') == 'true';
+        if (isAutoSync) {
+          MessageUtil.show(context, "正在同步...");
+        }
+        await StorageService().closeDatabase(); // 关闭db连接并重置句柄
+        if (isAutoSync) {
+          await WebDavService().uploadIfSafe();
+          if (mounted) {
+            ScaffoldMessenger.of(context).clearSnackBars();
+          }
+        }
+        WebDavService().reset();
+        SecurityService().clearKeys(); // 清空内存中的DK
+        if (!mounted) return;
+        Navigator.of(context).pushAndRemoveUntil(
+          MaterialPageRoute(builder: (context) => const UnlockPage()),
+          (route) => false, // 不允许返回
+        ); // 踢回解锁页并销毁当前所有UI栈
+        MessageUtil.show(context, "保险箱已锁定");
+      },
     );
   }
 

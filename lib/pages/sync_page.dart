@@ -16,6 +16,7 @@ import '../services/security_service.dart';
 import '../services/webdav_service.dart';
 import '../utils/utils.dart';
 import '../widgets/account_ui_utils.dart';
+import '../widgets/app_dialogs.dart';
 
 // 云同步界面
 class SyncPage extends StatefulWidget {
@@ -67,33 +68,19 @@ class SyncPageState extends State<SyncPage> {
 
   // 清空日志列表
   void _clearLogs() {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: const Text("清空日志"),
-        content: const Text("同步历史记录清空后将无法找回。"),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          TextButton(
-            onPressed: () async {
-              setState(() {
-                _logs.clear();
-              });
-              await _settings.set('sync_history_json', '[]'); // 置空列表
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              MessageUtil.show(context, "日志已清空");
-            },
-            child: Text(
-              "确认",
-              style: TextStyle(color: Theme.of(context).colorScheme.error),
-            ),
-          ),
-        ],
-      ),
+    AppDialogs.showConfirm(
+      context,
+      title: "清空日志",
+      message: "同步历史记录清空后将无法找回。",
+      confirmText: "确认",
+      danger: true,
+      onConfirm: () async {
+        setState(() {
+          _logs.clear();
+        });
+        await _settings.set('sync_history_json', '[]'); // 置空列表
+        if (mounted) MessageUtil.show(context, "日志已清空");
+      },
     );
   }
 
@@ -207,38 +194,11 @@ class SyncPageState extends State<SyncPage> {
     );
   }
 
-  // 用于智能同步下载确认的对话框
-  void _showActionConfirmDialog({
-    required String title,
-    required String content,
-    required VoidCallback onConfirm,
-  }) {
-    showDialog(
-      context: context,
-      builder: (context) => AlertDialog(
-        title: Text(title),
-        content: Text(content),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () {
-              Navigator.pop(context);
-              onConfirm();
-            },
-            child: const Text("确定"),
-          ),
-        ],
-      ),
-    );
-  }
-
   // 处理智能同步逻辑
   Future<void> _handleSmartSync() async {
     if (_isLoading) return;
     final decision = await _webdav.compareVersions();
+    if (!mounted) return;
     switch (decision) {
       case SyncDecision.bothSynced:
         _addLog("智能同步", "无需操作：已是最新");
@@ -248,9 +208,11 @@ class SyncPageState extends State<SyncPage> {
         await _executeSync(true); // 执行上传
         break;
       case SyncDecision.remoteNewer:
-        _showActionConfirmDialog(
+        AppDialogs.showConfirm(
+          context,
           title: "拉取云端更新",
-          content: "将云端更新同步至本地？完成后需要重新登录。",
+          message: "将云端更新同步至本地？完成后需要重新登录。",
+          confirmText: "确定",
           onConfirm: () => _executeSync(false), // 执行下载
         );
         break;

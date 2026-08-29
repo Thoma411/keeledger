@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-14 19:23:13
+ * @LastEditTime: 2026-08-29 20:45:30
  * @Description: 主框架
  */
 
@@ -18,6 +18,7 @@ import '../services/settings_service.dart';
 import '../services/webdav_service.dart';
 import '../utils/utils.dart';
 import '../widgets/account_ui_utils.dart';
+import '../widgets/app_dialogs.dart';
 import 'login_page.dart';
 import 'account_list_page.dart';
 import 'sync_page.dart';
@@ -292,12 +293,16 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
     }
     // 情况1: 未建库仅允许在主页(0)
     if (!hasDb && index != 0) {
-      AccountUiUtils.showGuardDialog(context, "访问受限", "请先在主页创建新数据库");
+      AppDialogs.showInfo(context, title: "访问受限", message: "请先在主页创建新数据库");
       return;
     }
     // 情况2: 未配WebDAV进入云同步页(1)
     if (!hasWebDav && index == 1) {
-      AccountUiUtils.showGuardDialog(context, "访问受限", "请先在设置中配置并连接 WebDAV 云盘");
+      AppDialogs.showInfo(
+        context,
+        title: "访问受限",
+        message: "请先在设置中配置并连接 WebDAV 云盘",
+      );
       return;
     }
     setState(() => _selectedIndex = index);

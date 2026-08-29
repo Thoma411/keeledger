@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-28 22:42:34
+ * @LastEditTime: 2026-08-29 22:11:42
  * @Description: 账户信息页(查看页)
  */
 
@@ -16,6 +16,7 @@ import 'package:intl/intl.dart';
 import '../models/account.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
+import '../widgets/app_dialogs.dart';
 import '../widgets/account_card.dart';
 import '../widgets/account_detail_view.dart';
 import '../services/auth_service.dart';
@@ -233,16 +234,16 @@ class AccountListPageState extends State<AccountListPage> {
   // 弹出新增账户对话框
   void showAddAccountDialog() async {
     if (_allAccounts.length >= 4096) {
-      AccountUiUtils.showGuardDialog(context, "这么能存？", "账户数量已达上限。");
+      AppDialogs.showInfo(context, title: "这么能存？", message: "账户数量已达上限。");
       return;
     }
     bool hasDb = await StorageService().isDatabaseExists(); // 检测数据库是否存在
     if (!mounted) return;
     if (!hasDb) {
-      AccountUiUtils.showGuardDialog(
+      AppDialogs.showInfo(
         context,
-        "操作受阻",
-        "请先在主界面“创建新数据库”并设置主密码，然后再添加账户条目。",
+        title: "操作受阻",
+        message: "请先在主界面“创建新数据库”并设置主密码，然后再添加账户条目。",
       );
       return; // 拦截后续的新增逻辑
     }
@@ -479,18 +480,10 @@ class AccountListPageState extends State<AccountListPage> {
                       );
                       if (isDuplicate) {
                         if (!context.mounted) return;
-                        showDialog(
-                          context: context,
-                          builder: (ctx) => AlertDialog(
-                            title: const Text("平台名冲突"),
-                            content: Text("平台 '$platform' 已存在，请更换名称。"),
-                            actions: [
-                              TextButton(
-                                onPressed: () => Navigator.pop(ctx),
-                                child: const Text("确认"),
-                              ),
-                            ],
-                          ),
+                        AppDialogs.showInfo(
+                          context,
+                          title: "平台名冲突",
+                          message: "平台 '$platform' 已存在，请更换名称。",
                         );
                         return;
                       }
@@ -502,10 +495,10 @@ class AccountListPageState extends State<AccountListPage> {
                           phone.trim().isNotEmpty; // 检测是否充分填写信息
                       if (!hasAnyCredential) {
                         if (!context.mounted) return;
-                        AccountUiUtils.showGuardDialog(
+                        AppDialogs.showInfo(
                           context,
-                          "信息不足",
-                          "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]",
+                          title: "信息不足",
+                          message: "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]",
                         );
                         return;
                       }
@@ -563,7 +556,7 @@ class AccountListPageState extends State<AccountListPage> {
     final int? index = _alphabetIndexMap[char];
     if (index != null) {
       final double targetOffset = index * 68.0; // 计算位置(假设itemExtent为68.0)
-      // 3检查目标位置是否合法(不超出最大滚动范围)
+      // 检查目标位置是否合法(不超出最大滚动范围)
       final maxScroll = _scrollController.position.maxScrollExtent;
       final finalOffset = targetOffset > maxScroll ? maxScroll : targetOffset;
       _scrollController.jumpTo(finalOffset);
@@ -575,60 +568,43 @@ class AccountListPageState extends State<AccountListPage> {
     final pwController = TextEditingController();
     final confirmController = TextEditingController();
 
-    showDialog(
-      context: context,
+    AppDialogs.showInputForm(
+      context,
+      title: "初始化安全保险箱",
+      message: "设置主密码后，我们将为您生成唯一的加密环境。",
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("初始化安全保险箱"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("设置主密码后，我们将为您生成唯一的加密环境。"),
-              const SizedBox(height: 20),
-              TextField(
-                controller: pwController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "输入主密码 (不少于6位)"),
-              ),
-              const SizedBox(height: 12),
-              TextField(
-                controller: confirmController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "确认主密码"),
-              ),
-            ],
-          ),
+      fields: [
+        AppDialogField(
+          controller: pwController,
+          label: "输入主密码 (不少于6位)",
+          obscure: true,
         ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              String pw = pwController.text;
-              if (pw != confirmController.text || pw.length < 6) {
-                MessageUtil.show(context, "密码不一致或长度不足6位");
-                return;
-              }
-
-              // 开始核心加密初始化
-              try {
-                final rkString = await AuthService().createVault(pw);
-                if (!context.mounted) return;
-                Navigator.pop(context); // 关闭输入框
-
-                // 展示恢复密钥(RK)
-                _showRecoveryKeyDialog(rkString);
-              } catch (e) {
-                MessageUtil.show(context, "初始化失败: $e", isError: true);
-              }
-            },
-            child: const Text("开始创建"),
-          ),
-        ],
-      ),
+        AppDialogField(
+          controller: confirmController,
+          label: "确认主密码",
+          obscure: true,
+        ),
+      ],
+      confirmText: "开始创建",
+      onConfirm: (dialogContext) async {
+        String pw = pwController.text;
+        if (pw != confirmController.text || pw.length < 6) {
+          MessageUtil.show(dialogContext, "密码不一致或长度不足6位");
+          return;
+        }
+        // 开始核心加密初始化
+        try {
+          final rkString = await AuthService().createVault(pw);
+          if (!dialogContext.mounted) return;
+          Navigator.pop(dialogContext); // 关闭输入框
+          // 展示恢复密钥(RK)
+          _showRecoveryKeyDialog(rkString);
+        } catch (e) {
+          if (dialogContext.mounted) {
+            MessageUtil.show(dialogContext, "初始化失败: $e", isError: true);
+          }
+        }
+      },
     );
   }
 
@@ -639,131 +615,77 @@ class AccountListPageState extends State<AccountListPage> {
     final pwdController = TextEditingController();
     final webdav = WebDavService();
 
-    showDialog(
-      context: context,
+    AppDialogs.showInputForm(
+      context,
+      title: "从云端拉取备份",
+      message: "请输入您的WebDAV配置信息以连接云盘。",
       barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Text("从云端拉取备份"),
-        content: SingleChildScrollView(
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            children: [
-              const Text("请输入您的WebDAV配置信息以连接云盘。"),
-              const SizedBox(height: 20),
-              TextField(
-                controller: urlController,
-                decoration: const InputDecoration(labelText: "服务器地址"),
-              ),
-              TextField(
-                controller: userController,
-                decoration: const InputDecoration(labelText: "账号"),
-              ),
-              TextField(
-                controller: pwdController,
-                obscureText: true,
-                decoration: const InputDecoration(labelText: "应用密码"),
-              ),
-            ],
-          ),
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(context),
-            child: const Text("取消"),
-          ),
-          ElevatedButton(
-            onPressed: () async {
-              try {
-                // 尝试连接
-                webdav.initCustomClient(
-                  urlController.text,
-                  userController.text,
-                  pwdController.text,
-                );
-                List<dav.File> files;
-                try {
-                  files = await webdav.readDir('/keeledger');
-                } catch (e) {
-                  throw Exception("无法访问云端目录/keeledger，请确认目录已手动创建或执行过备份。");
-                }
-                // 检查文件是否存在
-                bool fileExists = files.any((f) => f.name == 'keeledger.db');
-                if (!fileExists) throw Exception("云端目录中未找到keeledger.db");
+      fields: [
+        AppDialogField(controller: urlController, label: "服务器地址"),
+        AppDialogField(controller: userController, label: "账号"),
+        AppDialogField(controller: pwdController, label: "应用密码", obscure: true),
+      ],
+      confirmText: "开始恢复",
+      onConfirm: (dialogContext) async {
+        try {
+          // 尝试连接
+          webdav.initCustomClient(
+            urlController.text,
+            userController.text,
+            pwdController.text,
+          );
+          List<dav.File> files;
+          try {
+            files = await webdav.readDir('/keeledger');
+          } catch (e) {
+            throw Exception("无法访问云端目录/keeledger，请确认目录已手动创建或执行过备份。");
+          }
+          // 检查文件是否存在
+          bool fileExists = files.any((f) => f.name == 'keeledger.db');
+          if (!fileExists) throw Exception("云端目录中未找到keeledger.db");
 
-                String newEtag = await webdav.downloadVault(); // 下载并获取云端etag
-                await _settings.set('last_synced_etag', newEtag); // 立即保存etag
-                await _settings.set('need_revision_alignment', 'true'); // 设置哨兵
+          String newEtag = await webdav.downloadVault(); // 下载并获取云端etag
+          await _settings.set('last_synced_etag', newEtag); // 立即保存etag
+          await _settings.set('need_revision_alignment', 'true'); // 设置哨兵
 
-                if (!context.mounted) return;
-                Navigator.pop(context); // 关闭配置弹窗
-                // 下载成功后，由于本地有了.db，自动引导至解锁流程
-                MessageUtil.show(context, "备份已下载，重新解锁以载入数据");
-                // 强制跳转到解锁界面，并清空之前的路由栈（防止用户通过返回键回到未解密的界面）
-                Navigator.of(context).pushAndRemoveUntil(
-                  MaterialPageRoute(builder: (context) => const UnlockPage()),
-                  (route) => false, // 这会销毁当前的ShellPage
-                );
-              } catch (e) {
-                if (context.mounted) {
-                  MessageUtil.show(context, "恢复失败: $e", isError: true);
-                }
-              }
-            },
-            child: const Text("开始恢复"),
-          ),
-        ],
-      ),
+          if (!dialogContext.mounted) return;
+          Navigator.pop(dialogContext); // 关闭配置弹窗
+          if (!mounted) return;
+          // 下载成功后，由于本地有了.db，自动引导至解锁流程
+          MessageUtil.show(context, "备份已下载，重新解锁以载入数据");
+          // 强制跳转到解锁界面，并清空之前的路由栈（防止用户通过返回键回到未解密的界面）
+          Navigator.of(context).pushAndRemoveUntil(
+            MaterialPageRoute(builder: (context) => const UnlockPage()),
+            (route) => false, // 这会销毁当前的ShellPage
+          );
+        } catch (e) {
+          if (dialogContext.mounted) {
+            MessageUtil.show(dialogContext, "恢复失败: $e", isError: true);
+          }
+        }
+      },
     );
   }
 
   // 展示恢复密钥对话框
   void _showRecoveryKeyDialog(String rk) {
-    showDialog(
-      context: context,
-      barrierDismissible: false,
-      builder: (context) => AlertDialog(
-        title: const Row(
-          children: [
-            Icon(Icons.warning_amber_rounded, color: Colors.orange),
-            SizedBox(width: 10),
-            Expanded(child: Text("请保存您的恢复密钥")),
-          ],
-        ),
-        content: Column(
-          mainAxisSize: MainAxisSize.min,
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            const Text("如果您忘记了主密码，这是找回数据的唯一方法，请务必妥善保存。"),
-            const SizedBox(height: 20),
-            SelectableText(
-              rk,
-              style: TextStyle(
-                fontFamily: 'Consolas',
-                fontFamilyFallback: ['Microsoft YaHei'],
-                fontSize: 16,
-                fontWeight: FontWeight.bold,
-                color: Theme.of(context).colorScheme.primary,
-              ),
-            ),
-          ],
-        ),
-        actions: [
-          ElevatedButton(
-            onPressed: () async {
-              await Clipboard.setData(ClipboardData(text: rk));
-              if (!context.mounted) return;
-              Navigator.pop(context);
-              // 成功后刷新状态
-              await _checkDbStatus();
-              await refreshAccountList();
-              if (context.mounted) {
-                MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
-              }
-            },
-            child: const Text("复制恢复密钥"),
-          ),
-        ],
-      ),
+    AppDialogs.showSecret(
+      context,
+      title: "请保存您的恢复密钥",
+      message: "如果您忘记了主密码，这是找回数据的唯一方法，请务必妥善保存。",
+      secret: rk,
+      showWarningIcon: true,
+      onCopied: (dialogContext) async {
+        await Clipboard.setData(ClipboardData(text: rk));
+        if (!dialogContext.mounted) return;
+        Navigator.pop(dialogContext);
+        // 成功后刷新状态
+        await _checkDbStatus();
+        await refreshAccountList();
+        if (mounted) {
+          MessageUtil.show(context, "恢复密钥已复制至剪切板，保险箱已就绪");
+        }
+      },
     );
   }
 
