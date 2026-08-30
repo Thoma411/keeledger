@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-29 17:09:37
+ * @LastEditTime: 2026-08-30 23:02:41
  * @Description: 与SQLite交互的方法
  */
 
@@ -39,7 +39,7 @@ class StorageService {
   Future<void> closeDatabase() async {
     if (_database != null && _database!.isOpen) {
       await _database!.close();
-      _database = null; // 必须置空，以便下次调用 database 属性时触发 _initDB
+      _database = null; // 必须置空, 以便下次调用database属性时触发_initDB
       debugPrint("数据库连接已安全关闭");
     }
   }
@@ -125,6 +125,14 @@ class StorageService {
       conflictAlgorithm: ConflictAlgorithm.replace,
     );
     await _incrementRevision();
+  }
+
+  // 仅更新账户密文字段(用于v1→v2密文格式迁移, 不触发修订号避免同步噪声)
+  Future<void> updateAccountCipher(Account account) async {
+    final db = await database;
+    final map = account.toMap(); // toMap会用当前DK以v2格式重新加密
+    map.remove('id'); // 主键不更新
+    await db.update('accounts', map, where: 'id = ?', whereArgs: [account.id]);
   }
 
   // 删除数据

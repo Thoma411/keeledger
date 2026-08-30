@@ -1,13 +1,12 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-28 22:40:57
+ * @LastEditTime: 2026-08-30 22:54:31
  * @Description: 解锁与认证
  */
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
-import 'package:encrypt/encrypt.dart' as enc;
 
 import 'security_service.dart';
 import 'settings_service.dart';
@@ -33,8 +32,8 @@ class AuthService {
       final mk = _sec.deriveMasterKey(password, salt);
 
       // 3. 尝试用MK解开EDK_M得到DK
-      final dkString = _sec.decrypt(edkM, mk); // 此时解出的是 Base64 格式的 DK
-      final dk = enc.Key(base64.decode(dkString));
+      final dkString = _sec.decrypt(edkM, mk); // 此时解出的是Base64格式的DK
+      final dk = base64.decode(dkString);
 
       // 4. 验证DK是否正确(通过解密EVB)
       final verifyResult = _sec.decrypt(evb, dk);
@@ -55,6 +54,8 @@ class AuthService {
           }
           await s.set('need_revision_alignment', 'false');
         }
+        // 就地升级旧版(v1)密文到v2带认证格式(幂等)
+        await _sec.upgradeCipherToV2(mk: mk);
         return true;
       }
       return false;
@@ -73,16 +74,14 @@ class AuthService {
     final salt = _sec.generateRandomBytes(32); // 32字节salt
     final dkBytes = _sec.generateRandomBytes(32); // 32字节数据密钥(DK)
     final rkBytes = _sec.generateRandomBytes(32); // 32字节恢复密钥(RK)
-    final dk = enc.Key(dkBytes);
-    final rk = enc.Key(rkBytes);
     final rkString = base64.encode(rkBytes); // 用户的救命稻草
 
     // 3. 派生主密钥(MK)并执行"信封包装"加密
     final mk = _sec.deriveMasterKey(password, salt);
     final edkM = _sec.encrypt(base64.encode(dkBytes), mk); // MK锁DK
-    final edkR = _sec.encrypt(base64.encode(dkBytes), rk); // RK锁DK
-    final evb = _sec.encrypt("VAULT_READY", dk); // DK锁验证块
-    final erk = _sec.encrypt(rkString, dk); // DK锁RK(供日后查看)
+    final edkR = _sec.encrypt(base64.encode(dkBytes), rkBytes); // RK锁DK
+    final evb = _sec.encrypt("VAULT_READY", dkBytes); // DK锁验证块
+    final erk = _sec.encrypt(rkString, dkBytes); // DK锁RK(供日后查看)
 
     // 4. 持久化到system_metadata
     await _storage.saveMetadata('master_salt', base64.encode(salt));
@@ -92,7 +91,8 @@ class AuthService {
     await _storage.saveMetadata('erk', erk);
 
     // 5. 激活内存密钥
-    _sec.setDK(dk);
+    _sec.setDK(dkBytes);
+    await SettingsService().set('crypto_v2_upgraded', 'true'); // 新库全为v2
     return rkString;
   }
 
@@ -111,7 +111,7 @@ class AuthService {
     // 生成新盐值并派生新MK, 重新包装DK
     final newSalt = _sec.generateRandomBytes(32);
     final newMk = _sec.deriveMasterKey(newPassword, newSalt);
-    final dkBase64 = base64.encode(dk.bytes);
+    final dkBase64 = base64.encode(dk);
     final newEdkM = _sec.encrypt(dkBase64, newMk);
 
     // 持久化更新
@@ -128,8 +128,8 @@ class AuthService {
       final evb = await _storage.getMetadata('evb');
       if (edkR == null || evb == null) return false;
       final rawRkBytes = base64.decode(recoveryKey);
-      final dkString = _sec.decrypt(edkR, enc.Key(rawRkBytes));
-      final dk = enc.Key(base64.decode(dkString));
+      final dkString = _sec.decrypt(edkR, rawRkBytes);
+      final dk = base64.decode(dkString);
       // 用EVB验证DK是否正确(弥补GCM无认证校验: 错误RK解出的DK无法通过验证块)
       if (_sec.decrypt(evb, dk) != "VAULT_READY") return false;
       _sec.setDK(dk);
@@ -146,11 +146,14 @@ class AuthService {
     if (dk == null) throw "加密环境未就绪";
     final newSalt = _sec.generateRandomBytes(32);
     final newMk = _sec.deriveMasterKey(newPassword, newSalt);
-    final dkBase64 = base64.encode(dk.bytes);
+    final dkBase64 = base64.encode(dk);
     final newEdkM = _sec.encrypt(dkBase64, newMk);
     await _storage.saveMetadata('master_salt', base64.encode(newSalt));
     await _storage.saveMetadata('edk_m', newEdkM);
-    // 轮转恢复密钥, 返回新的RK
-    return _sec.rotateRecoveryKey();
+    // 轮转恢复密钥(edk_r/erk已按v2重写)
+    final newRk = await _sec.rotateRecoveryKey();
+    // 账户密文就地升级为v2(此时DK在内存; edk_m/edk_r/erk已是v2)
+    await _sec.upgradeCipherToV2(mk: newMk);
+    return newRk;
   }
 }
