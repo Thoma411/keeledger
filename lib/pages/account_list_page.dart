@@ -1,22 +1,21 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-29 22:11:42
+ * @LastEditTime: 2026-08-30 22:28:24
  * @Description: 账户信息页(查看页)
  */
 
-import 'package:uuid/uuid.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webdav_client/webdav_client.dart' as dav;
 import 'package:path/path.dart' as p;
 import 'package:path_provider/path_provider.dart';
-import 'package:intl/intl.dart';
 
 import '../models/account.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
 import '../widgets/app_dialogs.dart';
+import '../widgets/add_account_dialog.dart';
 import '../widgets/account_card.dart';
 import '../widgets/account_detail_view.dart';
 import '../services/auth_service.dart';
@@ -247,303 +246,11 @@ class AccountListPageState extends State<AccountListPage> {
       );
       return; // 拦截后续的新增逻辑
     }
-    final formKey = GlobalKey<FormState>();
-    // 临时变量，用于存储弹窗内的输入
-    String platform = '',
-        url = '',
-        name = '',
-        userId = '',
-        email = '',
-        pswd = '',
-        phone = '',
-        notes = '',
-        tagsStr = '';
-    int status = 1; // 默认使用中
-    bool realName = false;
-
-    final birthController = TextEditingController();
-    final signupController = TextEditingController();
-
-    bool isExpanded = false; // 默认折叠
-    double devideH = 6;
-    showDialog(
-      context: context,
-      builder: (context) {
-        // 使用 StatefulBuilder 处理弹窗内的复选框刷新
-        return StatefulBuilder(
-          builder: (context, setDialogState) {
-            return AlertDialog(
-              title: const Text("新增账户条目"),
-              content: SizedBox(
-                width: 500,
-                child: Form(
-                  key: formKey,
-                  child: SingleChildScrollView(
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min, // 紧凑布局
-                      children: [
-                        // 关键信息
-                        SizedBox(height: devideH / 2),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "平台名称*"),
-                          validator: (v) =>
-                              (v == null || v.isEmpty) ? "请输入平台名称" : null,
-                          onChanged: (v) => platform = v,
-                        ),
-                        const Divider(),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "用户昵称*"),
-                          onChanged: (v) => name = v,
-                        ),
-                        SizedBox(height: devideH),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "用户ID*"),
-                          onChanged: (v) => userId = v,
-                        ),
-                        SizedBox(height: devideH),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "密码*"),
-                          onChanged: (v) => pswd = v,
-                        ),
-                        SizedBox(height: devideH),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "绑定邮箱*"),
-                          onChanged: (v) => email = v,
-                        ),
-                        SizedBox(height: devideH),
-                        TextFormField(
-                          decoration: const InputDecoration(labelText: "绑定手机*"),
-                          inputFormatters: [
-                            FilteringTextInputFormatter.digitsOnly,
-                            LengthLimitingTextInputFormatter(11),
-                          ],
-                          onChanged: (v) => phone = v,
-                        ),
-                        SizedBox(height: devideH),
-                        // 附加信息
-                        AnimatedSize(
-                          duration: const Duration(milliseconds: 300), // 动画时长
-                          curve: Curves.easeInOut,
-                          child: SizedBox(
-                            width: double.infinity,
-                            child: isExpanded
-                                ? Column(
-                                    children: [
-                                      TextFormField(
-                                        decoration: const InputDecoration(
-                                          labelText: "网址",
-                                        ),
-                                        onChanged: (v) => url = v,
-                                      ),
-                                      SizedBox(height: devideH),
-                                      TextFormField(
-                                        decoration: const InputDecoration(
-                                          labelText: "标签 (逗号分隔)",
-                                        ),
-                                        onChanged: (v) => tagsStr = v,
-                                      ),
-                                      SizedBox(height: devideH),
-                                      DropdownButtonFormField<int>(
-                                        initialValue: status,
-                                        decoration: const InputDecoration(
-                                          labelText: "账户状态",
-                                        ),
-                                        items: const [
-                                          DropdownMenuItem(
-                                            value: 1,
-                                            child: Text("使用中"),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 0,
-                                            child: Text("未注册"),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 2,
-                                            child: Text("已注销"),
-                                          ),
-                                          DropdownMenuItem(
-                                            value: 3,
-                                            child: Text("无法使用"),
-                                          ),
-                                        ],
-                                        onChanged: (v) => setDialogState(
-                                          () => status = v ?? 1,
-                                        ),
-                                      ),
-                                      SizedBox(height: devideH),
-                                      TextFormField(
-                                        controller: birthController,
-                                        decoration: InputDecoration(
-                                          labelText: "生日",
-                                          suffixIcon: IconButton(
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                              size: 16,
-                                            ),
-                                            onPressed: () async {
-                                              final date = await showDatePicker(
-                                                context: context,
-                                                initialDate: DateTime.now(),
-                                                firstDate: DateTime(1900),
-                                                lastDate: DateTime(2100),
-                                              );
-                                              if (date != null) {
-                                                birthController.text =
-                                                    DateFormat(
-                                                      'yyyy-MM-dd',
-                                                    ).format(date);
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: devideH),
-                                      TextFormField(
-                                        controller: signupController,
-                                        decoration: InputDecoration(
-                                          labelText: "注册日期",
-                                          suffixIcon: IconButton(
-                                            icon: const Icon(
-                                              Icons.calendar_today,
-                                              size: 16,
-                                            ),
-                                            onPressed: () async {
-                                              final date = await showDatePicker(
-                                                context: context,
-                                                initialDate: DateTime.now(),
-                                                firstDate: DateTime(1900),
-                                                lastDate: DateTime(2100),
-                                              );
-                                              if (date != null) {
-                                                signupController.text =
-                                                    DateFormat(
-                                                      'yyyy-MM-dd',
-                                                    ).format(date);
-                                              }
-                                            },
-                                          ),
-                                        ),
-                                      ),
-                                      SizedBox(height: devideH),
-                                      CheckboxListTile(
-                                        title: const Text("是否已实名"),
-                                        value: realName,
-                                        onChanged: (v) {
-                                          setDialogState(() {
-                                            realName = v ?? false;
-                                          });
-                                        },
-                                      ),
-                                      SizedBox(height: devideH),
-                                      TextFormField(
-                                        decoration: const InputDecoration(
-                                          labelText: "备注",
-                                        ),
-                                        onChanged: (v) => notes = v,
-                                      ),
-                                    ],
-                                  )
-                                : const SizedBox.shrink(),
-                          ),
-                        ),
-                        const SizedBox(height: 4),
-                        Center(
-                          child: TextButton.icon(
-                            onPressed: () {
-                              setDialogState(() => isExpanded = !isExpanded);
-                            },
-                            icon: Icon(
-                              isExpanded
-                                  ? Icons.expand_less
-                                  : Icons.expand_more,
-                            ),
-                            label: Text(isExpanded ? "收起附加信息" : "填写更多信息"),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ),
-              actions: [
-                TextButton(
-                  onPressed: () => Navigator.pop(context),
-                  child: const Text("取消"),
-                ),
-                ElevatedButton(
-                  onPressed: () async {
-                    if (formKey.currentState!.validate()) {
-                      // 平台重名检测
-                      final storage = StorageService();
-                      bool isDuplicate = await storage.isPlatformNameExists(
-                        platform,
-                      );
-                      if (isDuplicate) {
-                        if (!context.mounted) return;
-                        AppDialogs.showInfo(
-                          context,
-                          title: "平台名冲突",
-                          message: "平台 '$platform' 已存在，请更换名称。",
-                        );
-                        return;
-                      }
-                      bool hasAnyCredential =
-                          name.trim().isNotEmpty ||
-                          userId.trim().isNotEmpty ||
-                          pswd.trim().isNotEmpty ||
-                          email.trim().isNotEmpty ||
-                          phone.trim().isNotEmpty; // 检测是否充分填写信息
-                      if (!hasAnyCredential) {
-                        if (!context.mounted) return;
-                        AppDialogs.showInfo(
-                          context,
-                          title: "信息不足",
-                          message: "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]",
-                        );
-                        return;
-                      }
-                      // 保存新账户
-                      final newAccount = Account(
-                        id: const Uuid().v4(),
-                        platform: platform,
-                        url: url,
-                        status: status,
-                        name: name,
-                        userId: userId,
-                        email: email,
-                        pswd: pswd,
-                        phone: phone,
-                        birth: birthController.text.trim().isEmpty
-                            ? null
-                            : DateTime.tryParse(birthController.text),
-                        notes: notes,
-                        signupDate: signupController.text.trim().isEmpty
-                            ? null
-                            : DateTime.tryParse(signupController.text),
-                        realName: realName,
-                        tags: tagsStr
-                            .split(RegExp(r'[,，]'))
-                            .map((t) => t.trim())
-                            .where((t) => t.isNotEmpty)
-                            .take(8)
-                            .toList(), // 标签最大数量: 8
-                        lastModified: DateTime.now().toIso8601String(),
-                      );
-                      await StorageService().insertAccount(newAccount);
-                      if (!context.mounted) return;
-                      Navigator.pop(context);
-                      refreshAccountList();
-                      MessageUtil.show(context, "账户添加成功");
-                    }
-                  },
-                  child: const Text("保存"),
-                ),
-              ],
-            );
-          },
-        );
-      },
-    );
+    final bool? added = await showNewAccountDialog(context);
+    if (added == true) {
+      refreshAccountList();
+      if (mounted) MessageUtil.show(context, "账户添加成功");
+    }
   }
 
   // 字母索引导航栏跳转逻辑
