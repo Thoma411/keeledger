@@ -720,15 +720,38 @@ class SettingsPageState extends State<SettingsPage> {
         const Divider(),
         ListTile(
           title: const Text("从 CSV 导入账户"),
-          subtitle: const Text("支持 13 字段标准格式的批量数据导入"),
+          subtitle: const Text("按表头字段名匹配导入，兼容旧版导出文件"),
           leading: const Icon(Icons.upload_file),
           enabled: _hasDb, // 必须建库后才能导入
           onTap: () async {
-            final (success, skipped) = await CsvService().pickAndImportCsv();
+            final r = await CsvService().pickAndImportCsv();
             if (!context.mounted) return;
-            if (success > 0 || skipped > 0) {
+            if (r.error != null) {
+              MessageUtil.show(
+                context,
+                "导入失败：${r.error}",
+                duration: const Duration(seconds: 3),
+                isError: true,
+              );
+              return;
+            }
+            if (r.success > 0 ||
+                r.skippedDuplicate > 0 ||
+                r.skippedInvalid > 0) {
               widget.onDataChanged?.call();
-              MessageUtil.show(context, "成功导入账户 $success 条，跳过 $skipped 条");
+              final parts = <String>[];
+              if (r.skippedDuplicate > 0) {
+                parts.add("重复 ${r.skippedDuplicate} 条");
+              }
+              if (r.skippedInvalid > 0) {
+                parts.add("异常 ${r.skippedInvalid} 条");
+              }
+              var msg = "成功导入账户 ${r.success} 条";
+              if (parts.isNotEmpty) msg += "，跳过${parts.join('，')}";
+              if (r.ignoredColumns > 0) {
+                msg += "（${r.ignoredColumns} 列未识别已忽略）";
+              }
+              MessageUtil.show(context, msg, duration: const Duration(seconds: 3));
             }
           },
         ),

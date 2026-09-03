@@ -1,13 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 21:55:09
- * @LastEditTime: 2026-06-16 20:42:55
+ * @LastEditTime: 2026-09-03 21:49:55
  * @Description: 13字段实体定义
  */
 
 import 'dart:convert';
-import 'package:uuid/uuid.dart';
-import 'package:intl/intl.dart';
 import 'package:lpinyin/lpinyin.dart';
 
 import '../services/security_service.dart';
@@ -132,64 +130,5 @@ class Account {
       realName: map['real_name'] == 1,
       lastModified: map['last_modified'] ?? DateTime.now().toIso8601String(),
     );
-  }
-
-  // 从CSV行数据映射为对象
-  factory Account.fromCsv(List<dynamic> row) {
-    // 尝试解析常见日期格式
-    DateTime? parseCsvDate(dynamic val) {
-      if (val == null) return null;
-      String dateStr = val.toString().trim();
-      if (dateStr.isEmpty) return null; // 空串直接返回null
-      String normalized = dateStr.replaceAll(RegExp(r'[/.]'), '-');
-      return DateTime.tryParse(normalized); // 尝试解析，失败返回null
-    }
-
-    return Account(
-      id: const Uuid().v4(),
-      platform: row[0]?.toString() ?? "",
-      name: row[1]?.toString() ?? "",
-      userId: row[2]?.toString() ?? "",
-      email: row[3]?.toString() ?? "",
-      pswd: row[4]?.toString() ?? "",
-      url: row[5]?.toString() ?? "",
-      phone: row[6]?.toString() ?? "",
-      birth: parseCsvDate(row[7]),
-      notes: row[8]?.toString(),
-      signupDate: parseCsvDate(row[9]),
-      realName:
-          row[10]?.toString() == '1' ||
-          row[10]?.toString() == 'true' ||
-          row[10]?.toString() == '是',
-      tags: row[11] != null && row[11].toString().isNotEmpty
-          ? row[11].toString().split(',')
-          : [],
-      status: int.tryParse(row[12]?.toString() ?? "1") ?? 1,
-      lastModified: DateTime.now().toIso8601String(),
-    );
-  }
-
-  // 转换为CSV行
-  List<dynamic> toCsvRow() {
-    String formatExportDate(DateTime? dt) {
-      if (dt == null) return "";
-      return DateFormat('yyyy-MM-dd').format(dt);
-    }
-
-    return [
-      platform, // 0
-      name, // 1
-      userId, // 2
-      email, // 3
-      pswd, // 4
-      url, // 5
-      phone, // 6
-      formatExportDate(birth), // 7
-      notes, // 8
-      formatExportDate(signupDate), // 9
-      realName ? '1' : '0', // 10
-      tags.join(','), // 11
-      status, // 12
-    ];
   }
 }
