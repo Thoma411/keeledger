@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-29 17:12:55
- * @LastEditTime: 2026-08-29 17:21:21
+ * @LastEditTime: 2026-09-03 23:42:40
  * @Description: 保险箱生命周期回归测试(建库/解锁/改密/找回)
  */
 
@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
+import 'package:keeledger/models/account.dart';
 import 'package:keeledger/services/auth_service.dart';
 import 'package:keeledger/services/security_service.dart';
 import 'package:keeledger/services/settings_service.dart';
@@ -92,5 +93,37 @@ void main() {
     // 4. 新RK有效, 旧RK被拒绝(EVB校验保证确定性)
     expect(await auth.verifyRecoveryKey(newRk), isTrue);
     expect(await auth.verifyRecoveryKey(rk), isFalse);
+  });
+
+  test('ensure-column: 打开库即自动补列, 星标字段保存与读取一致', () async {
+    final storage = StorageService();
+    // 建库(含ensure)后accounts应已存在favorite列
+    final db = await storage.database;
+    final info = await db.rawQuery('PRAGMA table_info(accounts)');
+    final colNames = info.map((r) => r['name']).toList();
+    expect(colNames, contains('favorite'));
+
+    // 插入带星标的账户并读回(createVault已激活DK, toMap可加密)
+    final acc = Account(
+      id: 'fav-1',
+      platform: 'GitHub',
+      url: '',
+      status: 1,
+      name: 'n',
+      userId: 'u',
+      email: 'e@x.com',
+      pswd: 'p',
+      phone: '',
+      realName: false,
+      favorite: true,
+      lastModified: DateTime.now().toIso8601String(),
+    );
+    await storage.insertAccount(acc);
+
+    final all = await storage.getAllAccounts();
+    final back = all.firstWhere((a) => a.id == 'fav-1');
+    expect(back.favorite, isTrue);
+    expect(back.platform, 'GitHub');
+    expect(back.email, 'e@x.com'); // 敏感字段经DK解密后正常
   });
 }

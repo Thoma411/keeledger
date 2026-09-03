@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-03 21:34:47
- * @LastEditTime: 2026-09-03 22:18:55
+ * @LastEditTime: 2026-09-03 23:40:54
  * @Description: CSV表头映射单元测试
  */
 
@@ -27,6 +27,7 @@ void main() {
         'real_name',
         'tags',
         'status',
+        'favorite',
       ]);
     });
   });
@@ -129,6 +130,7 @@ void main() {
       expect(acc.pswd, 'pwd123');
       expect(acc.phone, '13800000000');
       expect(acc.signupDate, DateTime(2019, 1, 1));
+      expect(acc.favorite, isFalse); // 未提供favorite列: 默认非星标
     });
 
     test('缺选填列->使用默认值', () {
@@ -138,6 +140,7 @@ void main() {
       expect(acc.name, 'tom');
       expect(acc.status, 1); // 默认"使用中"
       expect(acc.realName, isFalse);
+      expect(acc.favorite, isFalse);
       expect(acc.tags, isEmpty);
       expect(acc.birth, isNull);
       expect(acc.email, '');
@@ -156,7 +159,15 @@ void main() {
         expect(acc.realName, isTrue, reason: '"$mark" 应解析为 true');
       }
     });
-
+    test('favorite 兼容 1/true/是/0', () {
+      final idx = _idx(['platform', 'favorite']);
+      for (final mark in ['1', 'true', '是']) {
+        final acc = accountFromCsvRow(['GitHub', mark], idx)!;
+        expect(acc.favorite, isTrue, reason: '"$mark" 应解析为星标');
+      }
+      final no = accountFromCsvRow(['GitHub', '0'], idx)!;
+      expect(no.favorite, isFalse);
+    });
     test('非法状态/日期容错为默认值', () {
       final idx = _idx(['platform', 'status', 'birth']);
       final acc = accountFromCsvRow(['GitHub', 'abc', 'not-a-date'], idx)!;
@@ -189,6 +200,7 @@ void main() {
         '1',
         '工作,开发',
         '2',
+        '1', // favorite
       ], idx)!;
 
       final round = accountFromCsvRow(accountToCsvRow(src), idx)!;
@@ -206,6 +218,7 @@ void main() {
       expect(round.realName, src.realName);
       expect(round.tags, src.tags);
       expect(round.status, src.status);
+      expect(round.favorite, src.favorite);
     });
   });
 }

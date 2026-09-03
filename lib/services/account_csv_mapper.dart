@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-03 21:33:45
- * @LastEditTime: 2026-09-03 22:12:33
+ * @LastEditTime: 2026-09-03 23:47:33
  * @Description: 账户CSV字段注册表与映射
  */
 
@@ -47,7 +47,7 @@ String _fmtDate(DateTime? dt) =>
 Object? _rawStr(String raw) => raw;
 Object? _nullableStr(String raw) => raw.isEmpty ? null : raw;
 Object? _parseDate(String raw) => _parseCsvDate(raw);
-Object? _parseRealName(String raw) =>
+Object? _parseFlag(String raw) =>
     raw == '1' || raw.toLowerCase() == 'true' || raw == '是';
 Object? _parseTags(String raw) => raw.isEmpty
     ? const <String>[]
@@ -70,6 +70,7 @@ String _expBirth(Account a) => _fmtDate(a.birth);
 String _expNotes(Account a) => a.notes ?? "";
 String _expSignup(Account a) => _fmtDate(a.signupDate);
 String _expRealName(Account a) => a.realName ? '1' : '0';
+String _expFavorite(Account a) => a.favorite ? '1' : '0';
 String _expTags(Account a) => a.tags.join(',');
 String _expStatus(Account a) => a.status.toString();
 
@@ -120,7 +121,7 @@ const List<AccountCsvField> kAccountCsvFields = [
     key: 'real_name',
     aliases: ['realName'],
     export: _expRealName,
-    parse: _parseRealName,
+    parse: _parseFlag,
   ),
   AccountCsvField(
     key: 'tags',
@@ -129,6 +130,8 @@ const List<AccountCsvField> kAccountCsvFields = [
     parse: _parseTags,
   ),
   AccountCsvField(key: 'status', export: _expStatus, parse: _parseStatus),
+  // 补列字段
+  AccountCsvField(key: 'favorite', export: _expFavorite, parse: _parseFlag),
 ];
 
 // 解析表头: 返回 (规范列名->列索引, 未识别列数)
@@ -202,6 +205,7 @@ Account? accountFromCsvRow(List<dynamic> row, Map<String, int> headerIndex) {
     realName: (parsed['real_name'] as bool?) ?? false,
     tags: (parsed['tags'] as List<String>?) ?? const [],
     status: (parsed['status'] as int?) ?? 1,
+    favorite: (parsed['favorite'] as bool?) ?? false,
     lastModified: DateTime.now().toIso8601String(),
   );
 }

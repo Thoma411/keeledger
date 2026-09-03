@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-30 23:02:41
+ * @LastEditTime: 2026-09-03 23:49:04
  * @Description: 与SQLite交互的方法
  */
 
@@ -74,7 +74,7 @@ class StorageService {
     final String path = await getDatabasePath();
     debugPrint("db real path: $path");
 
-    return await openDatabase(
+    final db = await openDatabase(
       path,
       version: 1,
       onCreate: (db, version) async {
@@ -104,6 +104,34 @@ class StorageService {
           ''');
       },
     );
+    await _ensureSchema(db); // 打开即执行幂等补齐新增列(新老库统一)
+    return db;
+  }
+
+  // 后增列声明: 键=列名, 值=ADD COLUMN的SQL类型子句
+  // 原则: 原始13列由onCreate定义且不再改动; 之后新增列一律在此追加,
+  // 由_ensureSchema在打开库时对新老库统一补齐(无需bump version)。
+  static const Map<String, String> _additionalAccountColumns = {
+    'favorite': 'INTEGER NOT NULL DEFAULT 0', // 星标(明文, 非敏感)
+  };
+
+  // 幂等补列
+  Future<void> _ensureSchema(Database db) async {
+    if (_additionalAccountColumns.isEmpty) return;
+    final existing = <String>{};
+    final info = await db.rawQuery('PRAGMA table_info(accounts)');
+    for (final row in info) {
+      final name = row['name'];
+      if (name is String) existing.add(name);
+    }
+    for (final entry in _additionalAccountColumns.entries) {
+      if (!existing.contains(entry.key)) {
+        await db.execute(
+          'ALTER TABLE accounts ADD COLUMN ${entry.key} ${entry.value}',
+        );
+        debugPrint("schema: 已为 accounts 表补列 ${entry.key}");
+      }
+    }
   }
 
   // 更新逻辑版本号

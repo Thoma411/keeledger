@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 21:55:09
- * @LastEditTime: 2026-09-03 21:49:55
+ * @LastEditTime: 2026-09-03 23:45:09
  * @Description: 13字段实体定义
  */
 
@@ -20,6 +20,7 @@ class Account {
   List<String> tags; // 4. 标签
   DateTime? signupDate; // 5. 注册日期
   bool realName; // 6. 实名标记
+  bool favorite; // 星标(补列)
   String lastModified; // 7. 修改时间
   // 密文字段
   String name; // 8. 昵称
@@ -45,6 +46,7 @@ class Account {
     this.notes,
     this.signupDate,
     required this.realName,
+    this.favorite = false,
     required this.lastModified,
   }) : platform = platform.trim(),
        url = url.trim(),
@@ -91,6 +93,7 @@ class Account {
       // ---
       'signup_date': signupDate?.toIso8601String().split('T')[0],
       'real_name': realName ? 1 : 0,
+      'favorite': favorite ? 1 : 0,
       'last_modified': lastModified,
     };
   }
@@ -128,6 +131,7 @@ class Account {
           ? DateTime.tryParse(map['signup_date'])
           : null,
       realName: map['real_name'] == 1,
+      favorite: map['favorite'] == 1,
       lastModified: map['last_modified'] ?? DateTime.now().toIso8601String(),
     );
   }
