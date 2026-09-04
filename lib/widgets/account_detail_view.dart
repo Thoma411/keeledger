@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-07-02 17:50:53
+ * @LastEditTime: 2026-09-05 01:01:18
  * @Description: 账户信息详情页
  */
 
@@ -61,6 +61,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
 
   int _currentStatus = 1;
   bool _currentRealName = false;
+  bool _favorite = false;
   bool _isPasswordVisible = false;
 
   List<String> _tempTags = []; // 临时标签集
@@ -133,6 +134,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
         : "";
     _currentStatus = acc.status;
     _currentRealName = acc.realName;
+    _favorite = acc.favorite;
     _tempTags = List.from(acc.tags);
   }
 
@@ -212,13 +214,16 @@ class _AccountDetailViewState extends State<AccountDetailView> {
               ],
             ),
           ),
+          // 星标切换按钮
           IconButton(
-            onPressed: _toggleEditMode,
+            onPressed: _toggleFavorite,
             icon: Icon(
-              _isEditing ? Icons.check_circle_outline : Icons.edit_note,
-              color: Theme.of(context).colorScheme.primary,
-            ), // 编辑/保存切换按钮
-            tooltip: _isEditing ? "保存修改" : "编辑信息",
+              _favorite ? Icons.bookmark : Icons.bookmark_border,
+              color: _favorite
+                  ? Theme.of(context).colorScheme.primary
+                  : Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+            tooltip: _favorite ? "取消星标" : "加入星标",
           ),
           // 右侧关闭按钮
           IconButton(
@@ -776,6 +781,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
               ? null
               : DateTime.tryParse(_signupDateController.text),
           realName: _currentRealName,
+          favorite: _favorite,
           tags: _tempTags,
           lastModified: DateTime.now().toIso8601String(),
         );
@@ -790,8 +796,43 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     }
   }
 
-  // 构建手机端底部常驻操作栏
-  Widget _buildMobileBottomBar() {
+  // 切换书签星标状态
+  Future<void> _toggleFavorite() async {
+    final acc = widget.account;
+    final target = !_favorite;
+    setState(() => _favorite = target); // 先即时反馈UI
+    final updated = Account(
+      id: acc.id,
+      platform: acc.platform,
+      name: acc.name,
+      url: acc.url,
+      status: acc.status,
+      userId: acc.userId,
+      email: acc.email,
+      pswd: acc.pswd,
+      phone: acc.phone,
+      birth: acc.birth,
+      notes: acc.notes,
+      signupDate: acc.signupDate,
+      realName: acc.realName,
+      favorite: target,
+      tags: acc.tags,
+      lastModified: acc.lastModified,
+    );
+    try {
+      await StorageService().insertAccount(updated);
+      if (!mounted) return;
+      widget.onSaveSuccess(); // 通知列表刷新(并推进同步修订号)
+      MessageUtil.show(context, target ? "已加入星标" : "已取消星标");
+    } catch (e) {
+      if (!mounted) return;
+      setState(() => _favorite = !target); // 失败回滚
+      MessageUtil.show(context, "书签操作失败: $e", isError: true);
+    }
+  }
+
+  // 构建底部常驻操作栏
+  Widget _buildBottomActionBar() {
     final colorScheme = Theme.of(context).colorScheme;
 
     return Container(
@@ -931,7 +972,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     if (isMobileLayout) {
       return Scaffold(
         // 底部常驻操作栏
-        bottomNavigationBar: _buildMobileBottomBar(),
+        bottomNavigationBar: _buildBottomActionBar(),
         body: Form(
           key: _formKey,
           child: CustomScrollView(
@@ -979,6 +1020,19 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                           ),
                         ),
                       ),
+                actions: [
+                  // 右上角切换星标
+                  IconButton(
+                    onPressed: _toggleFavorite,
+                    icon: Icon(
+                      _favorite ? Icons.bookmark : Icons.bookmark_border,
+                      color: _favorite
+                          ? Theme.of(context).colorScheme.primary
+                          : Theme.of(context).colorScheme.onSurfaceVariant,
+                    ),
+                    tooltip: _favorite ? "取消星标" : "加入星标",
+                  ),
+                ],
               ),
               // 表单内容区
               SliverPadding(
@@ -1077,35 +1131,12 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     "最后修改于",
                     DateUtil.format(widget.account.lastModified),
                   ),
-                  const SizedBox(height: 32),
-                  // 按钮操作区
-                  OutlinedButton.icon(
-                    onPressed: () => _confirmDelete(widget.account),
-                    icon: Icon(
-                      Icons.delete_forever,
-                      color: Theme.of(context).colorScheme.error,
-                    ),
-                    label: Text(
-                      "删除此条目",
-                      style: TextStyle(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                    ),
-                    style: OutlinedButton.styleFrom(
-                      minimumSize: const Size(double.infinity, 50),
-                      side: BorderSide(
-                        color: Theme.of(context).colorScheme.error,
-                      ),
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(12),
-                      ),
-                    ),
-                  ),
-                  const SizedBox(height: 20),
                 ],
               ),
             ),
           ),
+          // 底部常驻操作栏(与移动端统一)
+          _buildBottomActionBar(),
         ],
       );
     }
