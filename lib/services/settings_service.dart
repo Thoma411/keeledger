@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-10 00:45:35
+ * @LastEditTime: 2026-09-10 01:04:27
  * @Description: 设置
  */
 
@@ -25,6 +25,8 @@ class SettingsService {
     'language',
     'window_size',
     'list_style', // 列表样式(卡片/经典)
+    'sort_by', // 排序依据(平台/修改时间)
+    'sort_ascending', // 排序方向(升序/降序)
     // 同步状态
     'last_synced_revision', // 上传下载时的本地逻辑版本快照
     'last_synced_etag', // 上传下载成功后保存的云端eTag
