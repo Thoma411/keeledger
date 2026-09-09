@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-08-30 22:28:24
+ * @LastEditTime: 2026-09-09 22:58:22
  * @Description: 账户信息页(查看页)
  */
 
@@ -56,6 +56,7 @@ class AccountListPageState extends State<AccountListPage> {
   // 排序依据
   String _sortBy = 'platform'; // platform/last_modified
   bool _isAscending = true; // 默认升序
+  bool _favoritesOnly = false; // 收藏夹(仅看星标)开关
   // 字母索引导航栏
   final Map<String, int> _alphabetIndexMap = {}; // 存储{字母:Index}
   final ScrollController _scrollController = ScrollController(); // 控制跳转
@@ -119,19 +120,21 @@ class AccountListPageState extends State<AccountListPage> {
     });
   }
 
-  // 搜索栏过滤逻辑
+  // 搜索过滤逻辑
   void _filterAccounts(String query) {
     setState(() {
-      List<Account> results = [];
-      if (query.trim().isEmpty) {
-        results = List.from(_allAccounts);
-      } else {
-        final keywords = query
-            .toLowerCase()
-            .split(RegExp(r'\s+'))
-            .where((k) => k.isNotEmpty)
-            .toList();
-        results = _allAccounts.where((acc) {
+      // 1. 先按收藏夹开关粗筛
+      List<Account> results = _favoritesOnly
+          ? _allAccounts.where((acc) => acc.favorite).toList()
+          : List.from(_allAccounts);
+      // 2. 再叠加搜索关键词过滤
+      final keywords = query
+          .toLowerCase()
+          .split(RegExp(r'\s+'))
+          .where((k) => k.isNotEmpty)
+          .toList();
+      if (keywords.isNotEmpty) {
+        results = results.where((acc) {
           // 检查条目是否满足所有关键词
           return keywords.every((keyword) {
             final platformMatch = acc.platform.toLowerCase().contains(keyword);
@@ -174,6 +177,12 @@ class AccountListPageState extends State<AccountListPage> {
       }
       _displayAccounts = results;
     });
+  }
+
+  // 切换收藏夹(仅看星标)开关
+  void _toggleFavoritesOnly() {
+    _favoritesOnly = !_favoritesOnly;
+    _filterAccounts(_searchController.text);
   }
 
   // 强制令页面保底节点获取焦点以防止页面切换失焦
@@ -477,6 +486,41 @@ class AccountListPageState extends State<AccountListPage> {
     );
   }
 
+  // 过滤(收藏夹/搜索)后无结果时的提示
+  Widget _buildEmptyResultHint() {
+    final bool noStar = _favoritesOnly && _searchController.text.trim().isEmpty;
+    return Center(
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Icon(
+            noStar ? Icons.bookmark_border : Icons.search_off,
+            size: 56,
+            color: Theme.of(context).colorScheme.outline,
+          ),
+          const SizedBox(height: 16),
+          Text(
+            noStar ? "还没有星标条目" : "没有找到匹配的条目",
+            style: TextStyle(
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          if (noStar)
+            Padding(
+              padding: const EdgeInsets.only(top: 6),
+              child: Text(
+                "在条目详情页点击右上角书签即可添加",
+                style: TextStyle(
+                  fontSize: 12,
+                  color: Theme.of(context).colorScheme.outline,
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+
   // 构建搜索栏
   Widget _buildSearchBox() {
     return Padding(
@@ -648,6 +692,23 @@ class AccountListPageState extends State<AccountListPage> {
                                 ? _buildEmptyStateUI(
                                     isMobileLayout,
                                   ) // 未建库/内容为空时显示引导
+                                : (_displayAccounts.isEmpty)
+                                ? Row(
+                                    // 过滤后无结果, 保留字母索引
+                                    children: isMobileLayout
+                                        ? [
+                                            Expanded(
+                                              child: _buildEmptyResultHint(),
+                                            ),
+                                            indexerWidget,
+                                          ]
+                                        : [
+                                            indexerWidget,
+                                            Expanded(
+                                              child: _buildEmptyResultHint(),
+                                            ),
+                                          ],
+                                  )
                                 : Row(
                                     children: isMobileLayout
                                         ? [listWidget, indexerWidget]
@@ -719,6 +780,21 @@ class AccountListPageState extends State<AccountListPage> {
                                 tooltip: "新增账户",
                                 onPressed: showAddAccountDialog,
                               ),
+                            // 收藏夹(仅看星标)开关
+                            IconButton(
+                              onPressed: _toggleFavoritesOnly,
+                              icon: Icon(
+                                _favoritesOnly
+                                    ? Icons.bookmark
+                                    : Icons.bookmark_border,
+                                color: _favoritesOnly
+                                    ? Theme.of(context).colorScheme.primary
+                                    : Theme.of(
+                                        context,
+                                      ).colorScheme.onSurfaceVariant,
+                              ),
+                              tooltip: _favoritesOnly ? "显示全部条目" : "只看星标条目",
+                            ),
                             _buildSortButton(), // 排序依据按钮
                             const SizedBox(width: 16),
                           ],
