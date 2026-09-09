@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-09 22:58:22
+ * @LastEditTime: 2026-09-10 00:19:02
  * @Description: 账户信息页(查看页)
  */
 
@@ -16,6 +16,7 @@ import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/add_account_dialog.dart';
+import '../widgets/account_list_tile.dart';
 import '../widgets/account_card.dart';
 import '../widgets/account_detail_view.dart';
 import '../services/auth_service.dart';
@@ -57,6 +58,7 @@ class AccountListPageState extends State<AccountListPage> {
   String _sortBy = 'platform'; // platform/last_modified
   bool _isAscending = true; // 默认升序
   bool _favoritesOnly = false; // 收藏夹(仅看星标)开关
+  String? _listStyle; // 列表样式
   // 字母索引导航栏
   final Map<String, int> _alphabetIndexMap = {}; // 存储{字母:Index}
   final ScrollController _scrollController = ScrollController(); // 控制跳转
@@ -69,6 +71,7 @@ class AccountListPageState extends State<AccountListPage> {
     _sortBy = _settings.get('sort_by', defaultValue: 'platform')!;
     _isAscending =
         _settings.get('sort_ascending', defaultValue: 'true') == 'true';
+    _listStyle = _settings.get('list_style');
     _prepareIconPath();
     _checkDbStatus();
     refreshAccountList();
@@ -185,8 +188,44 @@ class AccountListPageState extends State<AccountListPage> {
     _filterAccounts(_searchController.text);
   }
 
+  // 行内星标(书签)切换
+  Future<void> _toggleFavorite(Account acc) async {
+    final target = !acc.favorite;
+    final updated = Account(
+      id: acc.id,
+      platform: acc.platform,
+      name: acc.name,
+      url: acc.url,
+      status: acc.status,
+      userId: acc.userId,
+      email: acc.email,
+      pswd: acc.pswd,
+      phone: acc.phone,
+      birth: acc.birth,
+      notes: acc.notes,
+      signupDate: acc.signupDate,
+      realName: acc.realName,
+      favorite: target,
+      tags: acc.tags,
+      lastModified: acc.lastModified,
+    );
+    try {
+      await StorageService().insertAccount(updated);
+      if (!mounted) return;
+      refreshAccountList();
+      MessageUtil.show(context, target ? "已加入星标" : "已取消星标");
+    } catch (e) {
+      if (!mounted) return;
+      MessageUtil.show(context, "星标操作失败: $e", isError: true);
+    }
+  }
+
   // 强制令页面保底节点获取焦点以防止页面切换失焦
   void requestPageFocus() {
+    final saved = _settings.get('list_style');
+    if (saved != _listStyle) {
+      setState(() => _listStyle = saved);
+    }
     Future.delayed(const Duration(milliseconds: 50), () {
       if (!mounted) return;
       FocusScope.of(context).requestFocus(_pageFocusNode);
@@ -605,6 +644,9 @@ class AccountListPageState extends State<AccountListPage> {
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
     final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
+    // 列表样式: 未设置时按平台默认(移动端经典列表/桌面端卡片)
+    final bool classicStyle =
+        _listStyle == 'classic' || (_listStyle == null && isMobileLayout);
 
     const double panelWidth = 400; // 定义详情页宽度
     const double headerHeight = 70.0; // 搜索框高度
@@ -631,6 +673,17 @@ class AccountListPageState extends State<AccountListPage> {
           itemExtent: 68.0, // Container高度60 + 上下边距4*2
           itemBuilder: (context, index) {
             final acc = _displayAccounts[index];
+            if (classicStyle) {
+              // 经典列表
+              return AccountListTile(
+                account: acc,
+                isSelected: _selectedAccountId == acc.id,
+                iconDirPath: _iconDirPath,
+                onTap: () => _onAccountSelected(index),
+                onToggleFavorite: () => _toggleFavorite(acc),
+                isMobileLayout: isMobileLayout,
+              );
+            }
             return AccountCard(
               account: acc,
               isSelected: _selectedAccountId == acc.id,

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-08-30 23:34:32
+ * @LastEditTime: 2026-09-10 00:47:31
  * @Description: 设置页
  */
 
@@ -43,6 +43,7 @@ class SettingsPageState extends State<SettingsPage> {
   bool _hasDb = false; // 控制WebDAV按钮
   bool _autoFetchIcons = false; // 自动抓取图标
   bool _autoSyncEnabled = false; // 静默同步
+  String? _listStyle; // 列表样式: null=未设置(按平台默认); card/classic
   String _appPath = "";
 
   static const String currentVersion = "v1.2.0";
@@ -54,6 +55,7 @@ class SettingsPageState extends State<SettingsPage> {
     _isDarkMode = _settings.get('dark_mode') == 'true';
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
+    _listStyle = _settings.get('list_style');
     checkDbStatus();
     _loadAppPath();
   }
@@ -621,6 +623,27 @@ class SettingsPageState extends State<SettingsPage> {
         ),
         const Divider(),
         ListTile(
+          title: const Text("列表样式"),
+          leading: const Icon(Icons.view_list_outlined),
+          trailing: DropdownButton<String>(
+            value:
+                _listStyle ??
+                (AccountUiUtils.isMobileLayout(context) ? 'classic' : 'card'),
+            underline: const SizedBox(),
+            borderRadius: BorderRadius.circular(8),
+            onChanged: (v) async {
+              if (v == null || v == _listStyle) return;
+              setState(() => _listStyle = v);
+              await _settings.set('list_style', v);
+            },
+            items: const [
+              DropdownMenuItem(value: 'classic', child: Text("经典")),
+              DropdownMenuItem(value: 'card', child: Text("卡片")),
+            ],
+          ),
+        ),
+        const Divider(),
+        ListTile(
           title: const Text("应用路径"),
           subtitle: Text(
             _appPath.isEmpty ? "正在载入路径..." : _appPath,
@@ -751,7 +774,11 @@ class SettingsPageState extends State<SettingsPage> {
               if (r.ignoredColumns > 0) {
                 msg += "（${r.ignoredColumns} 列未识别已忽略）";
               }
-              MessageUtil.show(context, msg, duration: const Duration(seconds: 3));
+              MessageUtil.show(
+                context,
+                msg,
+                duration: const Duration(seconds: 3),
+              );
             }
           },
         ),

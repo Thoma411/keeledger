@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-07-16 15:06:36
+ * @LastEditTime: 2026-09-10 00:45:35
  * @Description: 设置
  */
 
@@ -24,6 +24,7 @@ class SettingsService {
     'dark_mode',
     'language',
     'window_size',
+    'list_style', // 列表样式(卡片/经典)
     // 同步状态
     'last_synced_revision', // 上传下载时的本地逻辑版本快照
     'last_synced_etag', // 上传下载成功后保存的云端eTag
