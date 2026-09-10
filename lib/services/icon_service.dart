@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-15 16:34:15
- * @LastEditTime: 2026-07-01 14:30:49
+ * @LastEditTime: 2026-09-10 22:05:25
  * @Description: 抓取网页icon
  */
 
@@ -34,7 +34,7 @@ class IconService {
     return p.join(dir.path, '$id.png');
   }
 
-  // 核心抓取逻辑：瀑布式请求
+  // 核心抓取逻辑: 瀑布式请求
   Future<void> fetchAndCacheIcon(String id, String rawUrl) async {
     if (rawUrl.isEmpty) return;
     if (_pendingFetches.contains(id)) return; // 拦截重复请求
@@ -45,11 +45,11 @@ class IconService {
     _pendingFetches.add(id); // 将当前ID加入正在请求队列
 
     try {
-      // 抓取 API 列表 (按优先级排序)
+      // 抓取API列表(按优先级排序)
       final List<String> apiPool = [
-        "https://api.iowen.cn/libs/favicon/$domain.png", // Iowen CDN
-        "https://favicon.im/$domain", // Favicon.im(备份)
+        "https://favicon.pub/$domain", // Favicon.pub
         "https://www.google.com/s2/favicons?sz=64&domain=$domain", // Google(备用)
+        // "https://api.iowen.cn/libs/favicon/$domain.png", // Iowen CDN(暂不可用)
       ];
       for (String apiUrl in apiPool) {
         try {
