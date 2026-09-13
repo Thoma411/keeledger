@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-10 00:19:02
+ * @LastEditTime: 2026-09-13 22:38:51
  * @Description: 账户信息页(查看页)
  */
 
@@ -305,7 +305,7 @@ class AccountListPageState extends State<AccountListPage> {
   void _jumpToSection(String char) {
     // 检查控制器是否已绑定到活跃的ScrollView
     if (!_scrollController.hasClients) {
-      debugPrint("ScrollController 尚未绑定到 ListView");
+      debugPrint("ScrollController 尚未绑定到账户列表");
       return;
     }
     final int? index = _alphabetIndexMap[char];
@@ -640,6 +640,40 @@ class AccountListPageState extends State<AccountListPage> {
     );
   }
 
+  // 构建单个账户条目(按当前列表样式选择 卡片/经典列表)
+  Widget _buildAccountItem(int index, bool classicStyle, bool isMobileLayout) {
+    final acc = _displayAccounts[index];
+    if (classicStyle) {
+      // 经典列表
+      return AccountListTile(
+        account: acc,
+        isSelected: _selectedAccountId == acc.id,
+        iconDirPath: _iconDirPath,
+        onTap: () => _onAccountSelected(index),
+        onToggleFavorite: () => _toggleFavorite(acc),
+        isMobileLayout: isMobileLayout,
+      );
+    }
+    return AccountCard(
+      account: acc,
+      isSelected: _selectedAccountId == acc.id,
+      isPasswordVisible: _visiblePasswordIds.contains(acc.id),
+      iconDirPath: _iconDirPath,
+      onTap: () => _onAccountSelected(index),
+      onTogglePassword: () {
+        setState(() {
+          _visiblePasswordIds.contains(acc.id)
+              ? _visiblePasswordIds.remove(acc.id)
+              : _visiblePasswordIds.add(acc.id);
+        });
+      },
+      onCopyPassword: () {
+        MessageUtil.show(context, "密码已复制");
+      },
+      isMobileLayout: isMobileLayout,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
@@ -661,49 +695,81 @@ class AccountListPageState extends State<AccountListPage> {
         alignRight: false,
       ),
     );
-    // 账户卡片列表
+    // 账户列表
     final Widget listWidget = Expanded(
       child: RefreshIndicator(
         onRefresh: refreshAccountList, // 下拉刷新回调
-        child: ListView.builder(
+        child: CustomScrollView(
           controller: _scrollController,
           physics: const AlwaysScrollableScrollPhysics(),
-          padding: const EdgeInsets.only(top: listTopGap, bottom: 8),
-          itemCount: _displayAccounts.length,
-          itemExtent: 68.0, // Container高度60 + 上下边距4*2
-          itemBuilder: (context, index) {
-            final acc = _displayAccounts[index];
-            if (classicStyle) {
-              // 经典列表
-              return AccountListTile(
-                account: acc,
-                isSelected: _selectedAccountId == acc.id,
-                iconDirPath: _iconDirPath,
-                onTap: () => _onAccountSelected(index),
-                onToggleFavorite: () => _toggleFavorite(acc),
-                isMobileLayout: isMobileLayout,
-              );
-            }
-            return AccountCard(
-              account: acc,
-              isSelected: _selectedAccountId == acc.id,
-              isPasswordVisible: _visiblePasswordIds.contains(acc.id),
-              iconDirPath: _iconDirPath,
-              onTap: () => _onAccountSelected(index),
-              onTogglePassword: () {
-                setState(() {
-                  _visiblePasswordIds.contains(acc.id)
-                      ? _visiblePasswordIds.remove(acc.id)
-                      : _visiblePasswordIds.add(acc.id);
-                });
-              },
-              onCopyPassword: () {
-                MessageUtil.show(context, "密码已复制");
-              },
-              isMobileLayout: isMobileLayout,
-            );
-          },
+          slivers: [
+            SliverPadding(
+              padding: EdgeInsets.only(
+                top: listTopGap,
+                bottom: isMobileLayout ? 0 : 8, // 移动端留白由统计条的下边距承担
+              ),
+              sliver: SliverFixedExtentList(
+                itemExtent: 68.0, // Container高度60 + 上下边距4*2
+                delegate: SliverChildBuilderDelegate(
+                  (context, index) =>
+                      _buildAccountItem(index, classicStyle, isMobileLayout),
+                  childCount: _displayAccounts.length,
+                ),
+              ),
+            ),
+            // 统计信息(仅移动端): 一屏放得下时贴列表右下角, 放不下时自然跟随最后一条
+            if (isMobileLayout)
+              SliverFillRemaining(
+                hasScrollBody: false,
+                child: Align(
+                  alignment: Alignment.bottomRight,
+                  child: Padding(
+                    padding: const EdgeInsets.only(
+                      top: 6,
+                      right: 16,
+                      bottom: 10,
+                    ),
+                    child: Text(
+                      "共计 ${_displayAccounts.length} 条账户",
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: Theme.of(context).colorScheme.onSurfaceVariant,
+                      ),
+                    ),
+                  ),
+                ),
+              ),
+          ],
         ),
+      ),
+    );
+
+    // 底栏(仅电脑端): 固定展示统计信息
+    final Widget bottomBar = Container(
+      height: 25,
+      width: double.infinity,
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      decoration: BoxDecoration(
+        color: Theme.of(context).colorScheme.surface,
+        border: Border(
+          top: BorderSide(
+            color: Theme.of(context).colorScheme.outlineVariant,
+            width: 0.6,
+          ),
+        ),
+      ),
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.end,
+        children: [
+          Text(
+            "共计 ${_displayAccounts.length} 条账户",
+            style: TextStyle(
+              fontSize: 11,
+              color: Theme.of(context).colorScheme.onSurfaceVariant,
+            ),
+          ),
+          const SizedBox(width: 20), // 右边距
+        ],
       ),
     );
 
@@ -768,38 +834,8 @@ class AccountListPageState extends State<AccountListPage> {
                                         : [indexerWidget, listWidget],
                                   ), // 手机端字母索引在右侧
                           ),
-                          // 底栏
-                          Container(
-                            height: 25,
-                            width: double.infinity,
-                            padding: const EdgeInsets.symmetric(horizontal: 16),
-                            decoration: BoxDecoration(
-                              color: Theme.of(context).colorScheme.surface,
-                              border: Border(
-                                top: BorderSide(
-                                  color: Theme.of(
-                                    context,
-                                  ).colorScheme.outlineVariant,
-                                  width: 0.6,
-                                ),
-                              ),
-                            ),
-                            child: Row(
-                              mainAxisAlignment: MainAxisAlignment.end,
-                              children: [
-                                Text(
-                                  "共计 ${_displayAccounts.length} 条账户",
-                                  style: TextStyle(
-                                    fontSize: 11,
-                                    color: Theme.of(
-                                      context,
-                                    ).colorScheme.onSurfaceVariant,
-                                  ),
-                                ),
-                                const SizedBox(width: 20), // 右边距
-                              ],
-                            ),
-                          ),
+                          // 底栏(仅电脑端)
+                          if (!isMobileLayout) bottomBar,
                         ],
                       ),
                     ),
