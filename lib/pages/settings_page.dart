@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-10 00:47:31
+ * @LastEditTime: 2026-09-13 23:14:37
  * @Description: 设置页
  */
 
@@ -46,7 +46,7 @@ class SettingsPageState extends State<SettingsPage> {
   String? _listStyle; // 列表样式: null=未设置(按平台默认); card/classic
   String _appPath = "";
 
-  static const String currentVersion = "v1.2.0";
+  static const String currentVersion = "v1.3.0";
 
   @override
   void initState() {
