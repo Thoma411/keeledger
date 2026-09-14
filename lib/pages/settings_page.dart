@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-13 23:14:37
+ * @LastEditTime: 2026-09-14 23:21:47
  * @Description: 设置页
  */
 
@@ -39,7 +39,7 @@ class SettingsPage extends StatefulWidget {
 // 设置界面
 class SettingsPageState extends State<SettingsPage> {
   final _settings = SettingsService();
-  bool _isDarkMode = false; // 深色模式
+  String _darkMode = 'light'; // 深色模式
   bool _hasDb = false; // 控制WebDAV按钮
   bool _autoFetchIcons = false; // 自动抓取图标
   bool _autoSyncEnabled = false; // 静默同步
@@ -52,7 +52,7 @@ class SettingsPageState extends State<SettingsPage> {
   void initState() {
     super.initState();
     // 从已经loadSettings加载好的缓存中获取值
-    _isDarkMode = _settings.get('dark_mode') == 'true';
+    _darkMode = _settings.darkModeValue;
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
     _listStyle = _settings.get('list_style');
@@ -60,11 +60,11 @@ class SettingsPageState extends State<SettingsPage> {
     _loadAppPath();
   }
 
-  // 切换深色模式
-  void _toggleDarkMode(bool value) async {
-    setState(() => _isDarkMode = value);
-    await _settings.set('dark_mode', value.toString()); // 异步存入数据库
-    themeNotifier.value = value ? ThemeMode.dark : ThemeMode.light;
+  // 切换深色模式(跟随系统/浅色/深色)
+  void _changeDarkMode(String value) async {
+    setState(() => _darkMode = value);
+    await _settings.setDarkMode(value);
+    darkModeNotifier.value = DarkModeUtil.toThemeMode(value);
   }
 
   // 切换自动抓取图标
@@ -614,12 +614,23 @@ class SettingsPageState extends State<SettingsPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
-        SwitchListTile(
-          title: const Text("深色模式"),
-          // subtitle: const Text("测试配置持久化架构"),
-          value: _isDarkMode,
-          onChanged: _toggleDarkMode,
-          secondary: const Icon(Icons.brightness_6),
+        ListTile(
+          title: const Text("外观"),
+          leading: const Icon(Icons.brightness_6),
+          trailing: DropdownButton<String>(
+            value: _darkMode,
+            underline: const SizedBox(),
+            borderRadius: BorderRadius.circular(8),
+            onChanged: (v) {
+              if (v == null || v == _darkMode) return;
+              _changeDarkMode(v);
+            },
+            items: const [
+              DropdownMenuItem(value: 'light', child: Text("浅色")),
+              DropdownMenuItem(value: 'dark', child: Text("深色")),
+              DropdownMenuItem(value: 'system', child: Text("跟随系统")),
+            ],
+          ),
         ),
         const Divider(),
         ListTile(

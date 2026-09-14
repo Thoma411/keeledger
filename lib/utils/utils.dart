@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-08-13 00:17:49
+ * @LastEditTime: 2026-09-14 23:11:05
  * @Description: 工具类
  */
 
@@ -17,6 +17,20 @@ class DateUtil {
       return DateFormat('yyyy-MM-dd HH:mm:ss').format(dt);
     } catch (e) {
       return isoString;
+    }
+  }
+}
+
+class DarkModeUtil {
+  /// 深色模式设置值
+  static ThemeMode toThemeMode(String darkMode) {
+    switch (darkMode) {
+      case 'system':
+        return ThemeMode.system;
+      case 'dark':
+        return ThemeMode.dark;
+      default:
+        return ThemeMode.light;
     }
   }
 }

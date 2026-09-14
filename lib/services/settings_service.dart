@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-10 01:04:27
+ * @LastEditTime: 2026-09-14 23:17:45
  * @Description: 设置
  */
 
@@ -72,6 +72,25 @@ class SettingsService {
       return _prefs?.getString(key) ?? defaultValue;
     }
     return _dbCache[key] ?? defaultValue;
+  }
+
+  // 深色模式设置
+  String get darkModeValue {
+    final String? v = get('dark_mode');
+    if (v == 'true') return 'dark';
+    if (v == 'system') return 'system';
+    return 'light';
+  }
+
+  // 保存深色模式设置
+  Future<void> setDarkMode(String mode) async {
+    if (mode == 'dark') {
+      await set('dark_mode', 'true');
+    } else if (mode == 'system') {
+      await set('dark_mode', 'system');
+    } else {
+      await set('dark_mode', 'false'); // 浅色
+    }
   }
 
   // 4. 统一写入

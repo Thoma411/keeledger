@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-09 23:51:46
- * @LastEditTime: 2026-08-05 22:18:33
+ * @LastEditTime: 2026-09-14 23:19:47
  * @Description: main
  */
 
@@ -15,9 +15,12 @@ import 'pages/login_page.dart';
 import 'pages/shell_page.dart';
 import 'services/storage_service.dart';
 import 'services/settings_service.dart';
+import 'utils/utils.dart';
 
-// 控制主题的变量
-final ValueNotifier<ThemeMode> themeNotifier = ValueNotifier(ThemeMode.light);
+// 深色模式变量
+final ValueNotifier<ThemeMode> darkModeNotifier = ValueNotifier(
+  ThemeMode.light,
+);
 
 void main() async {
   WidgetsFlutterBinding.ensureInitialized(); // 确保Flutter引擎绑定
@@ -56,9 +59,9 @@ void main() async {
   final bool oldUser = await StorageService().isDatabaseExists();
 
   // 从配置中读取初始主题状态
-  final settings = SettingsService();
-  final isDark = settings.get('dark_mode') == 'true';
-  themeNotifier.value = isDark ? ThemeMode.dark : ThemeMode.light;
+  darkModeNotifier.value = DarkModeUtil.toThemeMode(
+    SettingsService().darkModeValue,
+  );
 
   runApp(KeeledgerApp(isOldUser: oldUser)); // 运行应用并传递状态
 }
@@ -70,7 +73,7 @@ class KeeledgerApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return ValueListenableBuilder<ThemeMode>(
-      valueListenable: themeNotifier,
+      valueListenable: darkModeNotifier,
       builder: (_, mode, _) {
         return MaterialApp(
           title: "Keeledger",
