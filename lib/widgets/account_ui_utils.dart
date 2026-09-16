@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:13:52
- * @LastEditTime: 2026-08-14 19:35:18
+ * @LastEditTime: 2026-09-17 00:32:33
  * @Description: 视觉样式&辅助组件工具类
  */
 
@@ -36,6 +36,12 @@ class AccountUiUtils {
         SettingsService().get('force_desktop_mode') == 'true';
     return !forceDesktop;
   }
+
+  // shield icon彩蛋
+  static IconData shieldIcon(BuildContext context) =>
+      Theme.of(context).brightness == Brightness.dark
+      ? Icons.shield_moon_outlined
+      : Icons.shield_outlined;
 
   // 将数字状态码转换为易读文字
   static String getStatusText(int status) {

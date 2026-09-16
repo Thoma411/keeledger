@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-09-16 21:49:42
+ * @LastEditTime: 2026-09-17 00:33:27
  * @Description: 主框架
  */
 
@@ -136,7 +136,6 @@ class _ShellPageState extends State<ShellPage>
   Widget build(BuildContext context) {
     // 动态感知屏幕宽度
     final bool isMobileLayout = AccountUiUtils.isMobileLayout(context);
-    final bool isDark = Theme.of(context).brightness == Brightness.dark;
 
     Widget shellScaffold = Scaffold(
       // 手机模式: 启用标准底栏; 桌面模式: 设为null
@@ -169,9 +168,7 @@ class _ShellPageState extends State<ShellPage>
                         leading: Padding(
                           padding: EdgeInsets.symmetric(vertical: 20),
                           child: Icon(
-                            isDark
-                                ? Icons.shield_moon_outlined
-                                : Icons.shield_outlined,
+                            AccountUiUtils.shieldIcon(context),
                             size: 40,
                             color: Theme.of(context).colorScheme.primary,
                           ),

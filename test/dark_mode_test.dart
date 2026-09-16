@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-14 22:43:50
- * @LastEditTime: 2026-09-14 23:11:27
+ * @LastEditTime: 2026-09-17 00:31:26
  * @Description: 深色模式(设置页"外观")测试
  */
 
@@ -11,6 +11,7 @@ import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:keeledger/services/settings_service.dart';
 import 'package:keeledger/utils/utils.dart';
+import 'package:keeledger/widgets/account_ui_utils.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -55,5 +56,29 @@ void main() {
     expect(DarkModeUtil.toThemeMode('light'), ThemeMode.light);
     expect(DarkModeUtil.toThemeMode('dark'), ThemeMode.dark);
     expect(DarkModeUtil.toThemeMode('whatever'), ThemeMode.light);
+  });
+
+  testWidgets('深色模式: shield icon彩蛋', (tester) async {
+    for (final brightness in [Brightness.light, Brightness.dark]) {
+      late IconData icon;
+      await tester.pumpWidget(
+        MaterialApp(
+          key: ValueKey(brightness), // 强制重建整棵树, 避免复用上一轮的元素
+          theme: ThemeData(brightness: brightness),
+          home: Builder(
+            builder: (context) {
+              icon = AccountUiUtils.shieldIcon(context);
+              return const SizedBox();
+            },
+          ),
+        ),
+      );
+      expect(
+        icon,
+        brightness == Brightness.dark
+            ? Icons.shield_moon_outlined
+            : Icons.shield_outlined,
+      );
+    }
   });
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-13 22:38:51
+ * @LastEditTime: 2026-09-17 00:33:16
  * @Description: 账户信息页(查看页)
  */
 
@@ -451,7 +451,7 @@ class AccountListPageState extends State<AccountListPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            Icons.shield_outlined,
+            AccountUiUtils.shieldIcon(context),
             size: 80,
             color: Theme.of(context).colorScheme.primary,
           ),
