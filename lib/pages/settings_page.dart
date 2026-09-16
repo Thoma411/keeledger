@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-14 23:21:47
+ * @LastEditTime: 2026-09-16 22:05:07
  * @Description: 设置页
  */
 
@@ -39,11 +39,15 @@ class SettingsPage extends StatefulWidget {
 // 设置界面
 class SettingsPageState extends State<SettingsPage> {
   final _settings = SettingsService();
+  final _auth = AuthService();
   String _darkMode = 'light'; // 深色模式
   bool _hasDb = false; // 控制WebDAV按钮
   bool _autoFetchIcons = false; // 自动抓取图标
   bool _autoSyncEnabled = false; // 静默同步
   String? _listStyle; // 列表样式: null=未设置(按平台默认); card/classic
+  bool _bioEnabled = false; // 指纹解锁开关
+  bool _bioAvailable = false; // 指纹当前是否可用
+  String _bioReason = ""; // 指纹不可用原因
   String _appPath = "";
 
   static const String currentVersion = "v1.3.0";
@@ -56,8 +60,44 @@ class SettingsPageState extends State<SettingsPage> {
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
     _listStyle = _settings.get('list_style');
+    _bioEnabled = _auth.isBiometricEnabled();
+    if (Platform.isAndroid) _refreshBiometric();
     checkDbStatus();
     _loadAppPath();
+  }
+
+  // 刷新指纹可用性
+  Future<void> _refreshBiometric() async {
+    final String? reason = await _auth.biometricUnavailableReason();
+    if (!mounted) return;
+    setState(() {
+      _bioAvailable = reason == null;
+      _bioReason = reason ?? "";
+    });
+  }
+
+  // 指纹解锁开关
+  Future<void> _toggleBiometric(bool value) async {
+    if (value) {
+      final bool ok = await _auth.enableBiometric();
+      if (!mounted) return;
+      if (!ok) {
+        MessageUtil.show(context, "开启失败，请重试", isError: true);
+        return;
+      }
+      setState(() => _bioEnabled = true);
+    } else {
+      await _auth.disableBiometric();
+      if (!mounted) return;
+      setState(() => _bioEnabled = false);
+    }
+  }
+
+  // 指纹解锁项的说明文案
+  String _biometricSubtitle() {
+    if (!_hasDb) return "请先创建保险箱"; // 本地无库时不可开启
+    if (!_bioAvailable) return _bioReason;
+    return "使用设备指纹解锁应用";
   }
 
   // 切换深色模式(跟随系统/浅色/深色)
@@ -808,6 +848,20 @@ class SettingsPageState extends State<SettingsPage> {
           style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
         ),
         const SizedBox(height: 10),
+        // 指纹解锁: 仅移动端展示; 设备不支持时置灰并说明原因
+        if (Platform.isAndroid) ...[
+          SwitchListTile(
+            title: const Text("指纹解锁"),
+            subtitle: Text(_biometricSubtitle()),
+            secondary: const Icon(Icons.fingerprint),
+            value: _bioEnabled,
+            // 无库或设备不支持指纹时置灰(已开启时仍允许关闭)
+            onChanged: ((_hasDb && _bioAvailable) || _bioEnabled)
+                ? _toggleBiometric
+                : null,
+          ),
+        ],
+        const Divider(),
         ListTile(
           title: const Text("查看恢复密钥"),
           subtitle: const Text("主密码遗失时，凭此密钥可重置密码并找回数据"),

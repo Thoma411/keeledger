@@ -1,13 +1,14 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-30 22:54:31
+ * @LastEditTime: 2026-09-16 22:23:01
  * @Description: 解锁与认证
  */
 
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
+import 'biometric_keystore.dart';
 import 'security_service.dart';
 import 'settings_service.dart';
 import 'storage_service.dart';
@@ -16,6 +17,7 @@ import 'webdav_service.dart';
 class AuthService {
   final StorageService _storage = StorageService();
   final SecurityService _sec = SecurityService();
+  BiometricKeyStore _bioStore = PluginBiometricKeyStore(); // 指纹硬件密钥存储
 
   // 验证主密码并解锁
   Future<bool> verifyPassword(String password) async {
@@ -39,28 +41,13 @@ class AuthService {
       final verifyResult = _sec.decrypt(evb, dk);
 
       if (verifyResult == "VAULT_READY") {
-        // 5. 验证通过, 把DK存入内存供全应用使用
-        _sec.setDK(dk);
-        WebDavService().reset();
-        await SettingsService().loadDbSettings();
-        // 确保本地设备状态与数据库版本对齐
-        final s = SettingsService();
-        // 仅从云端下载新库重载后才对齐本地锚点
-        if (s.get('need_revision_alignment') == 'true') {
-          String? dbRev = s.get('local_revision');
-          if (dbRev != null) {
-            // 强制更新本地配置文件的快照
-            await s.set('last_synced_revision', dbRev);
-          }
-          await s.set('need_revision_alignment', 'false');
-        }
-        // 就地升级旧版(v1)密文到v2带认证格式(幂等)
-        await _sec.upgradeCipherToV2(mk: mk);
+        // 5. 验证通过: 激活保险箱(与指纹解锁路径共用收尾)
+        await _activateVault(dk, mk: mk);
         return true;
       }
       return false;
     } catch (e) {
-      debugPrint("解锁失败: $e"); // 可能是解密报错（密码错）
+      debugPrint("解锁失败: $e"); // 可能是解密报错(密码错)
       return false;
     }
   }
@@ -156,4 +143,138 @@ class AuthService {
     await _sec.upgradeCipherToV2(mk: newMk);
     return newRk;
   }
+
+  // 指纹解锁
+  static const String _bioEnabledKey = 'bio_enabled';
+  static const String _bioEdkKey = 'bio_edk';
+
+  // 注入硬件密钥存储(单元测试用)
+  @visibleForTesting
+  set bioKeyStore(BiometricKeyStore store) => _bioStore = store;
+
+  // 指纹解锁是否开启
+  bool isBiometricEnabled() {
+    final s = SettingsService();
+    final String edkB = s.get(_bioEdkKey) ?? '';
+    return s.get(_bioEnabledKey) == 'true' && edkB.isNotEmpty;
+  }
+
+  // 查询设备指纹可用性
+  Future<BiometricAvailability> biometricAvailability() =>
+      _bioStore.availability();
+
+  // 设备指纹是否可用(硬件存在且已录入)
+  Future<bool> isBiometricUsable() async =>
+      await _bioStore.availability() == BiometricAvailability.available;
+
+  // 指纹不可用原因
+  Future<String?> biometricUnavailableReason() async {
+    switch (await _bioStore.availability()) {
+      case BiometricAvailability.available:
+        return null;
+      case BiometricAvailability.noHardware:
+        return "本机不支持指纹识别";
+      case BiometricAvailability.notEnrolled:
+        return "请先在系统设置中录入指纹";
+      case BiometricAvailability.hwUnavailable:
+        return "指纹硬件暂时不可用";
+      case BiometricAvailability.unsupported:
+        return "当前平台暂不支持";
+    }
+  }
+
+  // 开启指纹解锁
+  Future<bool> enableBiometric() async {
+    final dk = _sec.currentDataKey;
+    if (dk == null) return false;
+    final bk = _sec.generateRandomBytes(32); // 生成32字节硬件密钥BK
+    if (!await _bioStore.writeKey(bk)) return false;
+    final String edkB = _sec.encrypt(base64.encode(dk), bk);
+    final s = SettingsService();
+    await s.set(_bioEdkKey, edkB);
+    await s.set(_bioEnabledKey, 'true');
+    return true;
+  }
+
+  // 关闭指纹解锁
+  Future<void> disableBiometric() async {
+    final s = SettingsService();
+    await s.set(_bioEnabledKey, 'false');
+    await s.set(_bioEdkKey, '');
+    await _bioStore.deleteKey();
+  }
+
+  // 指纹解锁
+  Future<BiometricUnlockResult> unlockWithBiometric() async {
+    if (!isBiometricEnabled()) return BiometricUnlockResult.notEnabled;
+    final String edkB = SettingsService().get(_bioEdkKey)!;
+
+    final BiometricKeyResult read = await _bioStore.readKey();
+    switch (read.status) {
+      case BiometricKeyStatus.ok:
+        break;
+      case BiometricKeyStatus.canceled:
+        return BiometricUnlockResult.canceled;
+      case BiometricKeyStatus.lockedOut:
+        return BiometricUnlockResult.lockedOut;
+      case BiometricKeyStatus.failed:
+        return BiometricUnlockResult.failed;
+      case BiometricKeyStatus.missing:
+      case BiometricKeyStatus.invalidated:
+        // 硬件中BK不存在或已失效时, 清除本机封装并由用户用主密码解锁后重新开启
+        await disableBiometric();
+        return BiometricUnlockResult.invalidated;
+    }
+
+    try {
+      final Uint8List dk = Uint8List.fromList(
+        base64.decode(_sec.decrypt(edkB, read.key!)),
+      );
+      // 与主密码路径相同的EVB校验: 防止错误密钥解出乱码被误接受
+      final String? evb = await _storage.getMetadata('evb');
+      if (evb == null || _sec.decrypt(evb, dk) != "VAULT_READY") {
+        await disableBiometric();
+        return BiometricUnlockResult.invalidated;
+      }
+      // 指纹路径没有MK: 仅完成不依赖MK的就地升级(edk_m由下次主密码解锁升级)
+      await _activateVault(dk);
+      return BiometricUnlockResult.success;
+    } catch (e) {
+      // 封装与当前数据库不匹配(例如主密码在其它设备修改后同步下来)
+      debugPrint('指纹解锁失败: $e');
+      await disableBiometric();
+      return BiometricUnlockResult.invalidated;
+    }
+  }
+
+  // 解锁成功后的公共收尾
+  // MK仅在主密码解锁路径可用(用于重包装edk_m)
+  Future<void> _activateVault(Uint8List dk, {Uint8List? mk}) async {
+    _sec.setDK(dk);
+    WebDavService().reset();
+    await SettingsService().loadDbSettings();
+    // 确保本地设备状态与数据库版本对齐
+    final s = SettingsService();
+    // 仅从云端下载新库重载后才对齐本地锚点
+    if (s.get('need_revision_alignment') == 'true') {
+      String? dbRev = s.get('local_revision');
+      if (dbRev != null) {
+        // 强制更新本地配置文件的快照
+        await s.set('last_synced_revision', dbRev);
+      }
+      await s.set('need_revision_alignment', 'false');
+    }
+    // 就地升级旧版(v1)密文到v2带认证格式(幂等)
+    await _sec.upgradeCipherToV2(mk: mk);
+  }
+}
+
+// 指纹解锁结果
+enum BiometricUnlockResult {
+  success, // 解锁成功
+  notEnabled, // 本机未开启指纹解锁
+  canceled, // 用户主动取消
+  lockedOut, // 尝试次数过多被系统短暂锁定
+  invalidated, // 封装已失效并被清除(需用主密码解锁后重新开启)
+  failed, // 其它失败(可重试)
 }

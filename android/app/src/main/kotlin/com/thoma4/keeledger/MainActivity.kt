@@ -2,9 +2,10 @@ package com.thoma4.keeledger
 
 import android.content.pm.ActivityInfo
 import android.os.Bundle
-import io.flutter.embedding.android.FlutterActivity
+import io.flutter.embedding.android.FlutterFragmentActivity
 
-class MainActivity : FlutterActivity() {
+// 指纹解锁(BiometricPrompt)依赖FragmentActivity
+class MainActivity : FlutterFragmentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         

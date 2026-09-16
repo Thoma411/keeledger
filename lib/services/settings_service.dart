@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-14 23:17:45
+ * @LastEditTime: 2026-09-16 21:51:17
  * @Description: 设置
  */
 
@@ -27,12 +27,14 @@ class SettingsService {
     'list_style', // 列表样式(卡片/经典)
     'sort_by', // 排序依据(平台/修改时间)
     'sort_ascending', // 排序方向(升序/降序)
+    'auto_fetch_icons', // 自动抓取图标
+    'force_desktop_mode', // 桌面模式
+    'bio_enabled', // 指纹解锁开关
+    'bio_edk', // 指纹封装的DK信封
     // 同步状态
     'last_synced_revision', // 上传下载时的本地逻辑版本快照
     'last_synced_etag', // 上传下载成功后保存的云端eTag
     'need_revision_alignment', // 对齐哨兵，确定是否更新本地版本锚点
-    'auto_fetch_icons', // 自动抓取图标
-    'force_desktop_mode', // 桌面模式
   };
 
   // 1. 初始化：应用启动即调用

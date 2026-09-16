@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-08-29 20:45:30
+ * @LastEditTime: 2026-09-16 21:49:42
  * @Description: 主框架
  */
 
@@ -31,7 +31,8 @@ class ShellPage extends StatefulWidget {
   State<ShellPage> createState() => _ShellPageState();
 }
 
-class _ShellPageState extends State<ShellPage> with WindowListener {
+class _ShellPageState extends State<ShellPage>
+    with WindowListener, WidgetsBindingObserver {
   int _selectedIndex = 0;
   DateTime? _lastPressedAt; // 移动端上一次按返回的时刻
 
@@ -45,6 +46,7 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addObserver(this); // 监听生命周期
     _handleStartupSync();
     if (Platform.isWindows) {
       windowManager.addListener(this); // 注册窗口监听
@@ -67,11 +69,23 @@ class _ShellPageState extends State<ShellPage> with WindowListener {
 
   @override
   void dispose() {
+    WidgetsBinding.instance.removeObserver(this);
     if (Platform.isWindows) {
       windowManager.removeListener(this); // 销毁监听
       windowManager.setPreventClose(false); // 归还窗口关闭控制权
     }
     super.dispose();
+  }
+
+  // 锁定守卫
+  @override
+  void didChangeAppLifecycleState(AppLifecycleState state) {
+    if (state != AppLifecycleState.resumed || !mounted) return;
+    if (SecurityService().currentDataKey != null) return;
+    Navigator.of(context).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (context) => const UnlockPage()),
+      (route) => false,
+    );
   }
 
   // 处理启动拉取
