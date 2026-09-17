@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-09-16 22:23:01
+ * @LastEditTime: 2026-09-17 13:47:20
  * @Description: 解锁与认证
  */
 
@@ -50,6 +50,12 @@ class AuthService {
       debugPrint("解锁失败: $e"); // 可能是解密报错(密码错)
       return false;
     }
+  }
+
+  // 锁定守卫判定
+  Future<bool> needsRelock() async {
+    if (_sec.currentDataKey != null) return false;
+    return await _storage.isDatabaseExists();
   }
 
   // 创建新保险箱: 生成随机原语、信封包装并持久化, 返回恢复密钥(RK)

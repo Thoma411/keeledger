@@ -1,17 +1,17 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-09-17 00:33:27
+ * @LastEditTime: 2026-09-17 13:47:58
  * @Description: 主框架
  */
 
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:window_manager/window_manager.dart';
 import 'package:path_provider/path_provider.dart';
 
+import '../services/auth_service.dart';
 import '../services/storage_service.dart';
 import '../services/security_service.dart';
 import '../services/settings_service.dart';
@@ -80,8 +80,13 @@ class _ShellPageState extends State<ShellPage>
   // 锁定守卫
   @override
   void didChangeAppLifecycleState(AppLifecycleState state) {
-    if (state != AppLifecycleState.resumed || !mounted) return;
-    if (SecurityService().currentDataKey != null) return;
+    if (state != AppLifecycleState.resumed) return;
+    _guardLockState();
+  }
+
+  Future<void> _guardLockState() async {
+    if (!await AuthService().needsRelock()) return;
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (context) => const UnlockPage()),
       (route) => false,
