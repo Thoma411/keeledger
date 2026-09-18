@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-09-05 01:01:18
+ * @LastEditTime: 2026-09-19 00:06:49
  * @Description: 账户信息详情页
  */
 
@@ -15,6 +15,7 @@ import 'package:flutter/foundation.dart';
 
 import '../models/account.dart';
 import '../services/storage_service.dart';
+import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import 'account_ui_utils.dart';
 import 'app_dialogs.dart';
@@ -155,33 +156,35 @@ class _AccountDetailViewState extends State<AccountDetailView> {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 if (!_isEditing) ...[
-                  // 只读模式：显示标题文字
-                  Text(
+                  // 只读态与编辑态共用输入框装饰, 保证两态头部高度一致
+                  _readOnlyValue(
                     account.platform,
                     style: const TextStyle(
-                      fontSize: 22,
+                      fontSize: AppText.display,
                       fontWeight: FontWeight.bold,
                     ),
-                    overflow: TextOverflow.ellipsis,
+                    maxLines: 1,
                   ),
                   const SizedBox(height: 4),
-                  AccountUiUtils.buildStatusChip(_currentStatus),
+                  // 与编辑态下拉框同高
+                  SizedBox(
+                    height: 35,
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: AccountUiUtils.buildStatusChip(_currentStatus),
+                    ),
+                  ),
                 ] else ...[
                   // 编辑模式：标题变输入框
                   TextFormField(
                     controller: _platformController,
                     style: const TextStyle(
-                      fontSize: 18,
+                      fontSize: AppText.display,
                       fontWeight: FontWeight.bold,
                     ),
-                    decoration: const InputDecoration(
-                      hintText: "平台名称",
-                      isDense: true,
-                      contentPadding: EdgeInsets.zero,
-                      border: InputBorder.none, // 去掉下划线，看起来更像“就地”编辑
-                    ),
+                    decoration: _fieldDecoration(hint: "平台名称"),
                   ),
-                  const SizedBox(height: 8),
+                  const SizedBox(height: 4),
                   // 状态变下拉框
                   SizedBox(
                     height: 35,
@@ -192,19 +195,31 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       items: const [
                         DropdownMenuItem(
                           value: 1,
-                          child: Text("使用中", style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            "使用中",
+                            style: TextStyle(fontSize: AppText.caption),
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 0,
-                          child: Text("未注册", style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            "未注册",
+                            style: TextStyle(fontSize: AppText.caption),
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 2,
-                          child: Text("已注销", style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            "已注销",
+                            style: TextStyle(fontSize: AppText.caption),
+                          ),
                         ),
                         DropdownMenuItem(
                           value: 3,
-                          child: Text("无法使用", style: TextStyle(fontSize: 12)),
+                          child: Text(
+                            "无法使用",
+                            style: TextStyle(fontSize: AppText.caption),
+                          ),
                         ),
                       ],
                       onChanged: (v) => setState(() => _currentStatus = v ?? 1),
@@ -307,15 +322,60 @@ class _AccountDetailViewState extends State<AccountDetailView> {
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: AppText.caption,
             ),
           ),
           const SizedBox(height: 4),
-          Text(
+          _readOnlyValue(
             value,
-            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500),
+            style: const TextStyle(
+              fontSize: AppText.body,
+              fontWeight: FontWeight.w500,
+            ),
+            maxLines: 1,
           ),
         ],
+      ),
+    );
+  }
+
+  // 输入框装饰
+  InputDecoration _fieldDecoration({
+    String? hint,
+    Widget? suffixIcon,
+    bool readOnly = false,
+  }) {
+    return InputDecoration(
+      isDense: true,
+      contentPadding: const EdgeInsets.symmetric(vertical: 8),
+      border: InputBorder.none,
+      focusedBorder: UnderlineInputBorder(
+        borderSide: BorderSide(
+          color: Theme.of(context).colorScheme.primary,
+          width: 1,
+        ),
+      ),
+      hintText: hint,
+      suffixIcon: suffixIcon,
+      // 限制图标栏尺寸
+      suffixIconConstraints: const BoxConstraints(
+        minWidth: 32,
+        minHeight: 32,
+        maxHeight: 32,
+      ),
+      filled: !readOnly, // 只读态不铺底色
+    );
+  }
+
+  // 只读态值渲染: 与输入框共用装饰
+  Widget _readOnlyValue(String text, {TextStyle? style, int? maxLines}) {
+    return InputDecorator(
+      decoration: _fieldDecoration(readOnly: true),
+      child: Text(
+        text,
+        style: style,
+        maxLines: maxLines,
+        overflow: maxLines == null ? null : TextOverflow.ellipsis,
       ),
     );
   }
@@ -328,6 +388,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
   }) {
+    final bool isMultiline = maxLines > 1; // 多行字段(如备注)
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -337,60 +398,53 @@ class _AccountDetailViewState extends State<AccountDetailView> {
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 11,
+              fontSize: AppText.caption,
             ),
           ),
           const SizedBox(height: 4),
           if (!_isEditing) // 只读状态
-            Container(
-              height: 24, // 统一高度
-              alignment: Alignment.centerLeft,
-              child: Text(
-                controller.text.isEmpty ? "-" : controller.text,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
+            _readOnlyValue(
+              controller.text.isEmpty ? "-" : controller.text,
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontWeight: FontWeight.w500,
               ),
+              maxLines: isMultiline ? null : 1,
             )
           else
-            SizedBox(
-              height: 24, // 保持与只读模式高度绝对一致
-              child: TextFormField(
-                controller: controller,
-                maxLines: 1, // 备注字段如果需要多行，单独处理
-                inputFormatters: isDateField
-                    ? [
-                        FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
-                        LengthLimitingTextInputFormatter(10),
-                      ]
-                    : inputFormatters,
-                style: const TextStyle(
-                  fontSize: 14,
-                  fontWeight: FontWeight.w500,
-                ),
-                decoration: InputDecoration(
-                  isDense: true,
-                  contentPadding: EdgeInsets.zero, // 彻底消除内边距
-                  border: InputBorder.none, // 编辑时也隐藏下划线，保持清爽
-                  focusedBorder: UnderlineInputBorder(
-                    borderSide: BorderSide(
-                      color: Theme.of(context).colorScheme.primary,
-                      width: 1,
-                    ),
-                  ), // 仅在聚焦时显示下划线
-                  suffixIcon: isDateField
-                      ? IconButton(
-                          icon: Icon(
-                            Icons.calendar_today,
-                            size: 16,
-                            color: Theme.of(context).colorScheme.primary,
-                          ),
-                          onPressed: () => _pickDate(context, controller),
+            TextFormField(
+              controller: controller,
+              maxLines: maxLines,
+              // 行数随内容增长: 不足 maxLines 按实际行数显示, 超出则框内滚动
+              minLines: isMultiline ? 1 : null,
+              inputFormatters: isDateField
+                  ? [
+                      FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
+                      LengthLimitingTextInputFormatter(10),
+                    ]
+                  : inputFormatters,
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: _fieldDecoration(
+                suffixIcon: isDateField
+                    ? IconButton(
+                        icon: Icon(
+                          Icons.calendar_today,
+                          size: 16,
+                          color: Theme.of(context).colorScheme.primary,
+                        ),
+                        onPressed: () => _pickDate(context, controller),
+                        padding: EdgeInsets.zero,
+                        // 收缩图标尺寸/点击区, 否则图标会把该行撑高(比其他输入框高一截)
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(32, 32),
                           padding: EdgeInsets.zero,
-                        )
-                      : null,
-                ),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                      )
+                    : null,
               ),
             ),
         ],
@@ -409,20 +463,21 @@ class _AccountDetailViewState extends State<AccountDetailView> {
             label,
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 12,
+              fontSize: AppText.caption,
             ),
           ),
           InkWell(
             onTap: url.isEmpty ? null : () => launchUrl(Uri.parse(url)),
-            child: Text(
+            child: _readOnlyValue(
               url.isEmpty ? "-" : url,
               style: TextStyle(
-                fontSize: 14,
+                fontSize: AppText.body,
                 color: url.isEmpty
                     ? Theme.of(context).colorScheme.onSurface
                     : Theme.of(context).colorScheme.primary,
                 decoration: url.isEmpty ? null : TextDecoration.underline,
               ),
+              maxLines: 1,
             ),
           ),
         ],
@@ -442,7 +497,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
             "密码",
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: 11,
+              fontSize: AppText.caption,
             ),
           ),
           const SizedBox(height: 4),
@@ -455,7 +510,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                         // 当眼睛闭着时，输入框也应该是遮蔽状态
                         obscureText: !isVisible,
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: AppText.body,
                           fontFamily: 'Consolas',
                         ),
                         decoration: const InputDecoration(
@@ -466,7 +521,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     : Text(
                         isVisible ? _pswdController.text : "••••••••",
                         style: const TextStyle(
-                          fontSize: 14,
+                          fontSize: AppText.body,
                           fontWeight: FontWeight.w500,
                           fontFamily: 'Consolas',
                         ),
@@ -519,7 +574,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       return _buildInfoRow("实名标记", _currentRealName ? "已实名" : "未实名");
     }
     return CheckboxListTile(
-      title: const Text("实名标记", style: TextStyle(fontSize: 14)),
+      title: const Text("实名标记", style: TextStyle(fontSize: AppText.body)),
       value: _currentRealName,
       contentPadding: EdgeInsets.zero,
       onChanged: (v) => setState(() => _currentRealName = v ?? false),
@@ -535,7 +590,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
           "标签 (回车切分)",
           style: TextStyle(
             color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: 11,
+            fontSize: AppText.caption,
           ),
         ),
         const SizedBox(height: 8),
@@ -564,7 +619,10 @@ class _AccountDetailViewState extends State<AccountDetailView> {
               // 已有的标签Chip
               ..._tempTags.map(
                 (tag) => InputChip(
-                  label: Text(tag, style: const TextStyle(fontSize: 12)),
+                  label: Text(
+                    tag,
+                    style: const TextStyle(fontSize: AppText.label),
+                  ),
                   shape: const StadiumBorder(),
                   onDeleted: _isEditing
                       ? () => setState(() => _tempTags.remove(tag))
@@ -591,7 +649,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       isDense: true,
                       contentPadding: EdgeInsets.symmetric(vertical: 4),
                     ),
-                    style: const TextStyle(fontSize: 13),
+                    style: const TextStyle(fontSize: AppText.sub),
                     // 回车或输入逗号/空格时触发切分
                     onSubmitted: (val) => _addNewTag(val),
                     onChanged: (val) {
@@ -631,7 +689,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                 label: Text(
                   s,
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppText.label,
                     color: Theme.of(context).colorScheme.primary,
                   ),
                 ),
@@ -908,7 +966,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                 TextFormField(
                   controller: _platformController,
                   style: const TextStyle(
-                    fontSize: 18,
+                    fontSize: AppText.section,
                     fontWeight: FontWeight.bold,
                   ),
                   decoration: const InputDecoration(
@@ -927,7 +985,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     isDense: true,
                     underline: const SizedBox(),
                     style: TextStyle(
-                      fontSize: 13,
+                      fontSize: AppText.sub,
                       color: Theme.of(context).colorScheme.primary,
                       fontWeight: FontWeight.w600,
                     ),
@@ -990,7 +1048,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                         "编辑账户",
                         style: TextStyle(
                           fontWeight: FontWeight.bold,
-                          fontSize: 16,
+                          fontSize: AppText.section,
                         ),
                       )
                     : null,
@@ -1005,7 +1063,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                                 widget.account.platform,
                                 style: const TextStyle(
                                   fontWeight: FontWeight.bold,
-                                  fontSize: 16,
+                                  fontSize: AppText.section,
                                 ),
                               ),
                         background: Container(
