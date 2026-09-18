@@ -12,6 +12,7 @@ import 'package:path/path.dart' as p;
 import '../models/account.dart';
 import '../services/icon_service.dart';
 import '../services/settings_service.dart';
+import '../utils/app_text.dart';
 import 'account_ui_utils.dart';
 
 class AccountListTile extends StatefulWidget {
@@ -120,10 +121,7 @@ class _AccountListTileState extends State<AccountListTile> {
                 children: [
                   Text(
                     acc.platform,
-                    style: const TextStyle(
-                      fontSize: 15,
-                      fontWeight: FontWeight.w600,
-                    ),
+                    style: const TextStyle(fontSize: AppText.title),
                     overflow: TextOverflow.ellipsis,
                   ),
                   if (subtitle.isNotEmpty) ...[
@@ -131,7 +129,7 @@ class _AccountListTileState extends State<AccountListTile> {
                     Text(
                       subtitle,
                       style: TextStyle(
-                        fontSize: 12,
+                        fontSize: AppText.caption,
                         color: cs.onSurfaceVariant,
                       ),
                       overflow: TextOverflow.ellipsis,

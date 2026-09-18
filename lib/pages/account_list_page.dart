@@ -24,6 +24,7 @@ import '../services/storage_service.dart';
 import '../services/settings_service.dart';
 import '../services/webdav_service.dart';
 import '../pages/login_page.dart';
+import '../utils/app_text.dart';
 import '../utils/utils.dart';
 
 class AccountListPage extends StatefulWidget {
@@ -458,7 +459,10 @@ class AccountListPageState extends State<AccountListPage> {
           const SizedBox(height: 24),
           const Text(
             "欢迎使用 Keeledger",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppText.display,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 12),
           Text(
@@ -550,7 +554,7 @@ class AccountListPageState extends State<AccountListPage> {
               child: Text(
                 "在条目详情页点击右上角书签即可添加",
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppText.caption,
                   color: Theme.of(context).colorScheme.outline,
                 ),
               ),
@@ -732,7 +736,7 @@ class AccountListPageState extends State<AccountListPage> {
                     child: Text(
                       "共计 ${_displayAccounts.length} 条账户",
                       style: TextStyle(
-                        fontSize: 11,
+                        fontSize: AppText.label,
                         color: Theme.of(context).colorScheme.onSurfaceVariant,
                       ),
                     ),
@@ -764,7 +768,7 @@ class AccountListPageState extends State<AccountListPage> {
           Text(
             "共计 ${_displayAccounts.length} 条账户",
             style: TextStyle(
-              fontSize: 11,
+              fontSize: AppText.label,
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
           ),

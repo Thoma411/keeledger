@@ -13,6 +13,7 @@ import 'package:path/path.dart' as p;
 import '../models/account.dart';
 import '../services/icon_service.dart';
 import '../services/settings_service.dart';
+import '../utils/app_text.dart';
 import 'account_ui_utils.dart';
 
 class AccountCard extends StatefulWidget {
@@ -125,8 +126,7 @@ class _AccountCardState extends State<AccountCard> {
                         child: Text(
                           acc.platform,
                           style: const TextStyle(
-                            fontSize: 15.5, // 平台名字号
-                            fontWeight: FontWeight.bold, // 粗体
+                            fontSize: AppText.title, // 平台名字号
                           ),
                           overflow: TextOverflow.ellipsis,
                         ),
@@ -156,16 +156,13 @@ class _AccountCardState extends State<AccountCard> {
                           children: [
                             Text(
                               acc.platform,
-                              style: const TextStyle(
-                                fontSize: 14,
-                                fontWeight: FontWeight.bold,
-                              ),
+                              style: const TextStyle(fontSize: AppText.title),
                               overflow: TextOverflow.ellipsis,
                             ),
                             Text(
                               firstColSub,
                               style: TextStyle(
-                                fontSize: 11,
+                                fontSize: AppText.label,
                                 color: firstColSub == "-"
                                     ? Theme.of(context).colorScheme.onSurface
                                     : Theme.of(
@@ -194,7 +191,7 @@ class _AccountCardState extends State<AccountCard> {
                               child: Text(
                                 secondColText,
                                 style: TextStyle(
-                                  fontSize: 13,
+                                  fontSize: AppText.sub,
                                   color: secondColColor,
                                 ),
                                 overflow: TextOverflow.ellipsis,
@@ -231,7 +228,7 @@ class _AccountCardState extends State<AccountCard> {
                                         child: Text(
                                           t,
                                           style: TextStyle(
-                                            fontSize: 11,
+                                            fontSize: AppText.label,
                                             color: Theme.of(
                                               context,
                                             ).colorScheme.onSecondaryContainer,
@@ -262,7 +259,7 @@ class _AccountCardState extends State<AccountCard> {
                                             .colorScheme
                                             .onSurfaceVariant
                                             .withValues(alpha: 0.5),
-                                  fontSize: 14,
+                                  fontSize: AppText.body,
                                   letterSpacing: isPasswordVisible ? 0.5 : 1.5,
                                 ),
                               ),

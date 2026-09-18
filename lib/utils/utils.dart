@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-09-14 23:11:05
+ * @LastEditTime: 2026-09-18 14:11:44
  * @Description: 工具类
  */
 
@@ -9,7 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 
 class DateUtil {
-  /// 将 ISO8601 字符串转换为 yyyy-MM-dd HH:mm 格式
+  // 将 ISO8601 字符串转换为 yyyy-MM-dd HH:mm 格式
   static String format(String? isoString) {
     if (isoString == null || isoString.isEmpty) return "无记录";
     try {
@@ -22,7 +22,7 @@ class DateUtil {
 }
 
 class DarkModeUtil {
-  /// 深色模式设置值
+  // 深色模式设置值
   static ThemeMode toThemeMode(String darkMode) {
     switch (darkMode) {
       case 'system':
@@ -35,8 +35,21 @@ class DarkModeUtil {
   }
 }
 
+class FontScaleUtil {
+  // 字号档位: 设置值->应用内倍率(参与系统字号设置叠乘)
+  static const double normal = 1.0; // 标准
+  static const double large = 1.2; // 大号字体
+  // 最终倍率的上下限
+  static const double minScale = 0.85;
+  static const double maxScale = 2.0;
+  // 设置值('normal'/'large')->应用内倍率
+  static double toScale(String level) => level == 'large' ? large : normal;
+  // 是否为大号字体
+  static bool isLarge(String level) => level == 'large';
+}
+
 class MessageUtil {
-  /// 统一的悬浮胶囊提示: 圆角、自动根据文字调整宽度、居中显示
+  // 统一的悬浮胶囊提示: 圆角、自动根据文字调整宽度、居中显示
   static void show(
     BuildContext context,
     String message, {

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-16 21:51:17
+ * @LastEditTime: 2026-09-18 14:16:57
  * @Description: 设置
  */
 
@@ -22,6 +22,7 @@ class SettingsService {
   // 定义哪些 Key 属于本地配置（不进数据库）
   final Set<String> _localKeys = {
     'dark_mode',
+    'font_scale', // 字号档位(normal/large)
     'language',
     'window_size',
     'list_style', // 列表样式(卡片/经典)
@@ -93,6 +94,15 @@ class SettingsService {
     } else {
       await set('dark_mode', 'false'); // 浅色
     }
+  }
+
+  // 字号档位
+  String get fontScaleValue =>
+      get('font_scale') == 'large' ? 'large' : 'normal';
+
+  // 保存字号档位
+  Future<void> setFontScale(String level) async {
+    await set('font_scale', level == 'large' ? 'large' : 'normal');
   }
 
   // 4. 统一写入

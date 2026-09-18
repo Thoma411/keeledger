@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-16 22:05:07
+ * @LastEditTime: 2026-09-18 14:18:50
  * @Description: 设置页
  */
 
@@ -41,6 +41,7 @@ class SettingsPageState extends State<SettingsPage> {
   final _settings = SettingsService();
   final _auth = AuthService();
   String _darkMode = 'light'; // 深色模式
+  bool _largeFont = false; // 大号字体
   bool _hasDb = false; // 控制WebDAV按钮
   bool _autoFetchIcons = false; // 自动抓取图标
   bool _autoSyncEnabled = false; // 静默同步
@@ -57,6 +58,7 @@ class SettingsPageState extends State<SettingsPage> {
     super.initState();
     // 从已经loadSettings加载好的缓存中获取值
     _darkMode = _settings.darkModeValue;
+    _largeFont = FontScaleUtil.isLarge(_settings.fontScaleValue);
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
     _listStyle = _settings.get('list_style');
@@ -105,6 +107,14 @@ class SettingsPageState extends State<SettingsPage> {
     setState(() => _darkMode = value);
     await _settings.setDarkMode(value);
     darkModeNotifier.value = DarkModeUtil.toThemeMode(value);
+  }
+
+  // 切换大号字体
+  void _toggleLargeFont(bool value) async {
+    final String level = value ? 'large' : 'normal';
+    setState(() => _largeFont = value);
+    await _settings.setFontScale(level);
+    fontScaleNotifier.value = FontScaleUtil.toScale(level);
   }
 
   // 切换自动抓取图标
@@ -671,6 +681,13 @@ class SettingsPageState extends State<SettingsPage> {
               DropdownMenuItem(value: 'system', child: Text("跟随系统")),
             ],
           ),
+        ),
+        const Divider(),
+        SwitchListTile(
+          title: const Text("大号字体"),
+          secondary: const Icon(Icons.format_size),
+          value: _largeFont,
+          onChanged: _toggleLargeFont,
         ),
         const Divider(),
         ListTile(

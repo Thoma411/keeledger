@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-09 23:51:46
- * @LastEditTime: 2026-09-14 23:19:47
+ * @LastEditTime: 2026-09-18 13:46:18
  * @Description: main
  */
 
@@ -15,11 +15,17 @@ import 'pages/login_page.dart';
 import 'pages/shell_page.dart';
 import 'services/storage_service.dart';
 import 'services/settings_service.dart';
+import 'utils/app_text.dart';
 import 'utils/utils.dart';
 
 // 深色模式变量
 final ValueNotifier<ThemeMode> darkModeNotifier = ValueNotifier(
   ThemeMode.light,
+);
+
+// 字号档位变量
+final ValueNotifier<double> fontScaleNotifier = ValueNotifier(
+  FontScaleUtil.normal,
 );
 
 void main() async {
@@ -62,6 +68,10 @@ void main() async {
   darkModeNotifier.value = DarkModeUtil.toThemeMode(
     SettingsService().darkModeValue,
   );
+  // 从配置中读取初始字号档位
+  fontScaleNotifier.value = FontScaleUtil.toScale(
+    SettingsService().fontScaleValue,
+  );
 
   runApp(KeeledgerApp(isOldUser: oldUser)); // 运行应用并传递状态
 }
@@ -75,16 +85,40 @@ class KeeledgerApp extends StatelessWidget {
     return ValueListenableBuilder<ThemeMode>(
       valueListenable: darkModeNotifier,
       builder: (_, mode, _) {
-        return MaterialApp(
-          title: "Keeledger",
-          debugShowCheckedModeBanner: false,
-          themeMode: mode,
-          theme: _buildLightTheme(), // 浅色主题
-          darkTheme: _buildDarkTheme(), // 深色主题
-          // 根据是否为老用户进入不同的界面
-          home: isOldUser ? const UnlockPage() : const ShellPage(),
+        return ValueListenableBuilder<double>(
+          valueListenable: fontScaleNotifier,
+          builder: (_, fontScale, _) {
+            return MaterialApp(
+              title: "Keeledger",
+              debugShowCheckedModeBanner: false,
+              themeMode: mode,
+              theme: _buildLightTheme(), // 浅色主题
+              darkTheme: _buildDarkTheme(), // 深色主题
+              // 在渲染层统一缩放字号档位
+              builder: (context, child) =>
+                  _applyFontScale(context, child, fontScale),
+              // 根据是否为老用户进入不同的界面
+              home: isOldUser ? const UnlockPage() : const ShellPage(),
+            );
+          },
         );
       },
+    );
+  }
+
+  // 叠乘系统字体缩放
+  Widget _applyFontScale(BuildContext context, Widget? child, double appScale) {
+    if (child == null) return const SizedBox.shrink();
+    if (appScale == FontScaleUtil.normal) return child;
+    final MediaQueryData mq = MediaQuery.of(context);
+    final double system = mq.textScaler.scale(1.0);
+    final double scale = (system * appScale).clamp(
+      FontScaleUtil.minScale,
+      FontScaleUtil.maxScale,
+    );
+    return MediaQuery(
+      data: mq.copyWith(textScaler: TextScaler.linear(scale)),
+      child: child,
     );
   }
 
@@ -127,23 +161,10 @@ class KeeledgerApp extends StatelessWidget {
         'Hiragino Sans GB',
         'sans-serif',
       ],
-      // 增强文本渲染清晰度（针对Windows）
+      // 增强文本渲染清晰度(针对Windows)
       typography: Typography.material2021(platform: TargetPlatform.windows),
-      textTheme: TextTheme(
-        // 详情页的标签(如平台名称)使用较小、浅色的样式
-        labelSmall: TextStyle(
-          fontSize: 11,
-          letterSpacing: 0.5,
-          color: Colors.grey,
-          fontWeight: FontWeight.w500,
-        ),
-        // 主要正文(如账号内容)
-        bodyMedium: TextStyle(
-          fontSize: 14,
-          letterSpacing: 0.2,
-          color: colorScheme.onSurface,
-        ),
-      ),
+      // 字号标准
+      textTheme: AppText.buildTextTheme(colorScheme),
 
       // 卡片配置
       cardTheme: CardThemeData(
