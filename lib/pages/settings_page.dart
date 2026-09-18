@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-18 14:18:50
+ * @LastEditTime: 2026-09-18 22:14:15
  * @Description: 设置页
  */
 
@@ -493,7 +493,7 @@ class SettingsPageState extends State<SettingsPage> {
                 const SizedBox(width: 8),
                 // 根据状态动态切换标题
                 Expanded(
-                  child: Text(isDownloading ? "正在升级中..." : "发现新版本 $version"),
+                  child: Text(isDownloading ? "升级中..." : "发现新版本 $version"),
                 ),
               ],
             ),
@@ -790,7 +790,7 @@ class SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 10),
         ListTile(
           title: const Text("云端 WebDAV 配置"),
-          subtitle: Text(_hasDb ? "已解锁，可配置云备份凭据" : "请先初始化数据库"),
+          subtitle: Text(_hasDb ? "已解锁，可配置云备份凭据" : "请先初始化保险箱"),
           leading: const Icon(Icons.cloud_queue),
           enabled: _hasDb,
           onTap: _hasDb ? _showWebDavDialog : null,

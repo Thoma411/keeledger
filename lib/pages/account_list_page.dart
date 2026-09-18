@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-17 00:33:16
+ * @LastEditTime: 2026-09-18 22:16:22
  * @Description: 账户信息页(查看页)
  */
 
@@ -291,7 +291,7 @@ class AccountListPageState extends State<AccountListPage> {
       AppDialogs.showInfo(
         context,
         title: "操作受阻",
-        message: "请先在主界面“创建新数据库”并设置主密码，然后再添加账户条目。",
+        message: "请先在主界面“创建保险箱”并设置主密码，然后再添加账户条目。",
       );
       return; // 拦截后续的新增逻辑
     }
@@ -466,7 +466,7 @@ class AccountListPageState extends State<AccountListPage> {
           ),
           const SizedBox(height: 12),
           Text(
-            _isDbCreated ? "空空如也？请前往设置导入或点击'+'号添加账户" : "尚未初始化数据库，请选择操作以开始使用",
+            _isDbCreated ? "空空如也？请前往设置导入或点击'+'号添加账户" : "尚未初始化保险箱，请选择操作以开始使用",
             style: TextStyle(
               color: Theme.of(context).colorScheme.onSurfaceVariant,
             ),
@@ -482,7 +482,7 @@ class AccountListPageState extends State<AccountListPage> {
                       ElevatedButton.icon(
                         onPressed: _showSetupMasterPasswordDialog,
                         icon: const Icon(Icons.add_moderator),
-                        label: const Text("创建新数据库"),
+                        label: const Text("创建保险箱"),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(200, 50),
                         ),
@@ -506,7 +506,7 @@ class AccountListPageState extends State<AccountListPage> {
                           _showSetupMasterPasswordDialog();
                         },
                         icon: const Icon(Icons.add_moderator),
-                        label: const Text("创建新数据库"),
+                        label: const Text("创建保险箱"),
                         style: ElevatedButton.styleFrom(
                           minimumSize: const Size(180, 50),
                         ),

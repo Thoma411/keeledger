@@ -1,14 +1,14 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 19:47:45
- * @LastEditTime: 2026-09-16 22:51:05
+ * @LastEditTime: 2026-09-18 22:13:36
  * @Description: 初始登入界面
  */
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import '../pages/shell_page.dart'; // 用于跳转到 MainShell
+import '../pages/shell_page.dart'; // 用于跳转到主框架
 import '../services/auth_service.dart';
 import '../utils/utils.dart';
 import '../widgets/app_dialogs.dart';
@@ -46,7 +46,7 @@ class _UnlockPageState extends State<UnlockPage> {
     super.dispose();
   }
 
-  // 检测指纹可用性, 并在本次进入解锁页时自动弹一次系统指纹提示
+  // 检测指纹可用性, 并自动弹一次系统提示
   Future<void> _initBiometric() async {
     final bool usable = await _auth.isBiometricUsable();
     if (!mounted) return;
@@ -79,7 +79,7 @@ class _UnlockPageState extends State<UnlockPage> {
   // 指纹解锁
   Future<void> _unlockWithBiometric() async {
     if (_bioBusy) return;
-    // 系统锁定期间不触发认证(状态由按钮上的倒计时呈现, 不再弹提示)
+    // 锁定期间不触发认证(状态由按钮上的倒计时呈现)
     if (_bioLockRemaining > 0) return;
     setState(() => _bioBusy = true);
     final BiometricUnlockResult result = await _auth.unlockWithBiometric();
@@ -90,11 +90,11 @@ class _UnlockPageState extends State<UnlockPage> {
         _goHome();
         break;
       case BiometricUnlockResult.canceled:
-        // 用户主动取消: 不报错, 静默交还给密码输入
+        // 用户取消: 静默交还密码输入
         _passwordFocus.requestFocus();
         break;
       case BiometricUnlockResult.lockedOut:
-        // 尝试次数过多被系统短暂锁定: 交由按钮显示倒计时
+        // 系统锁定: 由按钮显示倒计时
         _startLockCountdown();
         _passwordFocus.requestFocus();
         break;
@@ -114,7 +114,7 @@ class _UnlockPageState extends State<UnlockPage> {
     }
   }
 
-  // 系统锁定(约 30 秒): 只把倒计时显示在解锁按钮上, 不再弹悬浮提示
+  // 系统锁定
   void _startLockCountdown() {
     setState(() => _bioLockRemaining = 30);
     if (_bioLockCounting) return; // 已在倒计时
@@ -256,7 +256,7 @@ class _UnlockPageState extends State<UnlockPage> {
                 Text(
                   _bioEnabled && _bioAvailable
                       ? "请按压指纹解锁，或输入主密码"
-                      : (_bioEnabled ? "指纹暂不可用，请输入主密码" : "请输入主密码以解锁数据库"),
+                      : (_bioEnabled ? "指纹暂不可用，请输入主密码" : "请输入主密码以解锁保险箱"),
                   textAlign: TextAlign.center,
                   style: TextStyle(
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
@@ -297,7 +297,7 @@ class _UnlockPageState extends State<UnlockPage> {
                 if (_bioEnabled && _bioAvailable) ...[
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
-                    // 系统锁定期间保持可点, 点击后提示剩余秒数
+                    // 锁定期间保持可点
                     onPressed: _bioBusy ? null : _unlockWithBiometric,
                     icon: const Icon(Icons.fingerprint),
                     label: Text(

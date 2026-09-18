@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-09-17 13:47:58
+ * @LastEditTime: 2026-09-18 22:14:34
  * @Description: 主框架
  */
 
@@ -309,7 +309,7 @@ class _ShellPageState extends State<ShellPage>
     }
     // 情况1: 未建库仅允许在主页(0)
     if (!hasDb && index != 0) {
-      AppDialogs.showInfo(context, title: "访问受限", message: "请先在主页创建新数据库");
+      AppDialogs.showInfo(context, title: "访问受限", message: "请创建保险箱");
       return;
     }
     // 情况2: 未配WebDAV进入云同步页(1)

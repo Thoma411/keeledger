@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:24:18
- * @LastEditTime: 2026-07-16 16:47:24
+ * @LastEditTime: 2026-09-18 22:16:06
  * @Description: 云同步页
  */
 
@@ -164,7 +164,7 @@ class SyncPageState extends State<SyncPage> {
       builder: (context) => AlertDialog(
         title: const Text("同步版本冲突"),
         content: const Text(
-          "检测到本地与云端的数据库不一致。请选择保留哪个版本？\n\n注意：保留云端将强制重启应用以重新载入数据，这会永久覆盖另一端的数据。",
+          "本地与云端保险箱不一致。请选择保留哪个版本？\n\n注意：保留云端将强制重启应用以重新载入数据，这会永久覆盖另一端的数据。",
         ),
         actions: [
           TextButton(
