@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-19 12:28:11
+ * @LastEditTime: 2026-09-19 15:56:12
  * @Description: 设置页
  */
 
@@ -52,7 +52,7 @@ class SettingsPageState extends State<SettingsPage> {
   String _bioReason = ""; // 指纹不可用原因
   String _appPath = "";
 
-  static const String currentVersion = "v1.3.0";
+  static const String currentVersion = "v1.4.0";
 
   @override
   void initState() {
