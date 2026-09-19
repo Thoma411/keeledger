@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-18 22:14:15
+ * @LastEditTime: 2026-09-19 12:28:11
  * @Description: 设置页
  */
 
@@ -22,6 +22,7 @@ import '../services/csv_service.dart';
 import '../services/update_service.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/app_dialogs.dart';
+import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
 import 'help_page.dart';
@@ -513,7 +514,7 @@ class SettingsPageState extends State<SettingsPage> {
                           Text(
                             "$statusText ($downloadProgress%)",
                             style: const TextStyle(
-                              fontSize: 13,
+                              fontSize: AppText.sub,
                               fontWeight: FontWeight.bold,
                             ),
                           ),
@@ -528,13 +529,16 @@ class SettingsPageState extends State<SettingsPage> {
                             "更新日志：",
                             style: TextStyle(
                               fontWeight: FontWeight.bold,
-                              fontSize: 13,
+                              fontSize: AppText.sub,
                             ),
                           ),
                           const SizedBox(height: 8),
                           Text(
                             notes,
-                            style: const TextStyle(fontSize: 12, height: 1.4),
+                            style: const TextStyle(
+                              fontSize: AppText.caption,
+                              height: 1.4,
+                            ),
                           ),
                         ],
                       ),
@@ -661,7 +665,10 @@ class SettingsPageState extends State<SettingsPage> {
       children: [
         const Text(
           "通用",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppText.section,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         ListTile(
@@ -720,7 +727,7 @@ class SettingsPageState extends State<SettingsPage> {
             style: TextStyle(
               fontFamily: 'Consolas',
               fontFamilyFallback: const ['Microsoft YaHei'],
-              fontSize: 11,
+              fontSize: AppText.label,
               color: Theme.of(
                 context,
               ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
@@ -785,7 +792,10 @@ class SettingsPageState extends State<SettingsPage> {
 
         const Text(
           "数据管理",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppText.section,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         ListTile(
@@ -862,7 +872,10 @@ class SettingsPageState extends State<SettingsPage> {
 
         const Text(
           "安全",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppText.section,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         // 指纹解锁: 仅移动端展示; 设备不支持时置灰并说明原因
@@ -906,7 +919,10 @@ class SettingsPageState extends State<SettingsPage> {
 
         const Text(
           "其他",
-          style: TextStyle(fontSize: 20, fontWeight: FontWeight.bold),
+          style: TextStyle(
+            fontSize: AppText.section,
+            fontWeight: FontWeight.bold,
+          ),
         ),
         const SizedBox(height: 10),
         ListTile(

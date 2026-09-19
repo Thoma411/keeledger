@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-18 01:07:59
- * @LastEditTime: 2026-09-18 22:07:40
+ * @LastEditTime: 2026-09-19 12:28:25
  * @Description: 应用字号标准
  */
 
@@ -22,6 +22,7 @@ class AppText {
 
   // 固定尺寸(不缩放)
   static const double indexLetter = 10; // 字母索引条
+  static const double indexLetterNarrow = 9; // 窄条(靠右布局)
   static const double bubble = 34; // 索引气泡
 
   static TextTheme buildTextTheme(ColorScheme cs) {

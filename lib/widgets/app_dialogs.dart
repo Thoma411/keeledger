@@ -1,11 +1,13 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-29 19:04:31
- * @LastEditTime: 2026-08-29 21:24:22
+ * @LastEditTime: 2026-09-19 12:31:14
  * @Description: 统一应用对话框(提示/确认/表单输入/密钥展示)
  */
 
 import 'package:flutter/material.dart';
+
+import '../utils/app_text.dart';
 
 // 表单输入对话框的单个字段配置
 class AppDialogField {
@@ -106,7 +108,7 @@ class AppDialogs {
                 Text(
                   message,
                   style: TextStyle(
-                    fontSize: 12,
+                    fontSize: AppText.caption,
                     color:
                         messageColor ??
                         Theme.of(dialogContext).colorScheme.onSurfaceVariant,
@@ -177,7 +179,7 @@ class AppDialogs {
               Text(
                 message,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppText.caption,
                   color: Theme.of(dialogContext).colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -188,7 +190,7 @@ class AppDialogs {
               style: TextStyle(
                 fontFamily: 'Consolas',
                 fontFamilyFallback: ['Microsoft YaHei'],
-                fontSize: 16,
+                fontSize: AppText.title,
                 fontWeight: FontWeight.bold,
                 color: Theme.of(dialogContext).colorScheme.primary,
               ),

@@ -1,11 +1,13 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:55:11
- * @LastEditTime: 2026-09-14 22:18:30
+ * @LastEditTime: 2026-09-19 12:31:00
  * @Description: 构建字母索引导航栏
  */
 
 import 'package:flutter/material.dart';
+
+import '../utils/app_text.dart';
 
 class AlphabetIndexer extends StatefulWidget {
   final Map<String, int> alphabetIndexMap;
@@ -113,8 +115,9 @@ class _AlphabetIndexerState extends State<AlphabetIndexer> {
             child: Text(
               _activeChar ?? '',
               key: _bubbleKey,
+              textScaler: TextScaler.noScaling, // 固定不缩放
               style: TextStyle(
-                fontSize: 34,
+                fontSize: AppText.bubble,
                 fontWeight: FontWeight.bold,
                 color: cs.onInverseSurface,
                 decoration: TextDecoration.underline, // 字母下划线
@@ -177,8 +180,11 @@ class _AlphabetIndexerState extends State<AlphabetIndexer> {
                             : null,
                         child: Text(
                           char,
+                          textScaler: TextScaler.noScaling, // 固定不缩放
                           style: TextStyle(
-                            fontSize: widget.alignRight ? 9 : 10,
+                            fontSize: widget.alignRight
+                                ? AppText.indexLetterNarrow
+                                : AppText.indexLetter,
                             fontWeight: FontWeight.bold,
                             color: isActive
                                 ? (hasData ? cs.primary : cs.onSurfaceVariant)

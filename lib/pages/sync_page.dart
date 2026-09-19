@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:24:18
- * @LastEditTime: 2026-09-18 22:16:06
+ * @LastEditTime: 2026-09-19 12:49:06
  * @Description: 云同步页
  */
 
@@ -14,6 +14,7 @@ import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/security_service.dart';
 import '../services/webdav_service.dart';
+import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/app_dialogs.dart';
@@ -292,7 +293,10 @@ class SyncPageState extends State<SyncPage> {
                 side: BorderSide(color: colorScheme.outlineVariant), // 同时淡化边框
               ),
               icon: Icon(icon, size: 16),
-              label: Text(label, style: const TextStyle(fontSize: 13)),
+              label: Text(
+                label,
+                style: const TextStyle(fontSize: AppText.body),
+              ),
             ),
     );
   }
@@ -383,7 +387,7 @@ class SyncPageState extends State<SyncPage> {
               Text(
                 title,
                 style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: AppText.title,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -391,7 +395,7 @@ class SyncPageState extends State<SyncPage> {
               Text(
                 timeStr,
                 style: TextStyle(
-                  fontSize: 12,
+                  fontSize: AppText.caption,
                   color: colorScheme.onSurfaceVariant,
                 ),
               ),
@@ -399,7 +403,7 @@ class SyncPageState extends State<SyncPage> {
                 Text(
                   "${(size / 1024).toStringAsFixed(1)} KB",
                   style: TextStyle(
-                    fontSize: 11,
+                    fontSize: AppText.label,
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
@@ -457,6 +461,14 @@ class SyncPageState extends State<SyncPage> {
     Widget actionSection = Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          "应用会根据修改时间决定上传/下载：",
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: AppText.caption,
+          ),
+        ),
+        const SizedBox(height: 6),
         _buildActionButton(
           label: _getSmartSyncLabel(),
           icon: Icons.sync,
@@ -465,34 +477,37 @@ class SyncPageState extends State<SyncPage> {
         ),
         const SizedBox(height: 12),
         Text(
-          "系统将根据修改时间自动决定上传或下载",
-          style: TextStyle(color: colorScheme.onSurfaceVariant, fontSize: 12),
+          "保留以下按钮用于手动执行：",
+          style: TextStyle(
+            color: colorScheme.onSurfaceVariant,
+            fontSize: AppText.caption,
+          ),
         ),
-        SizedBox(height: isMobileLayout ? 12 : 32),
-        _buildActionButton(
-          label: "测试云端连接",
-          icon: Icons.lan_outlined,
-          onPressed: _handlePing,
-        ),
-        const SizedBox(height: 12),
+        const SizedBox(height: 6),
         Row(
           children: [
             Expanded(
               child: _buildActionButton(
-                label: "强制上传",
+                label: "上传",
                 icon: Icons.upload,
                 onPressed: () => _executeSync(true),
               ),
             ),
-            const SizedBox(width: 6),
+            const SizedBox(width: 12),
             Expanded(
               child: _buildActionButton(
-                label: "强制下载",
+                label: "下载",
                 icon: Icons.download,
                 onPressed: () => _executeSync(false),
               ),
             ),
           ],
+        ),
+        const SizedBox(height: 12),
+        _buildActionButton(
+          label: "测试云端连接",
+          icon: Icons.lan_outlined,
+          onPressed: _handlePing,
         ),
       ],
     );
@@ -556,7 +571,10 @@ class SyncPageState extends State<SyncPage> {
         children: [
           const Text(
             "云同步仪表盘",
-            style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+            style: TextStyle(
+              fontSize: AppText.display,
+              fontWeight: FontWeight.bold,
+            ),
           ),
           const SizedBox(height: 24),
           statusSection,

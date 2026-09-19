@@ -1,12 +1,14 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-09-18 14:11:44
+ * @LastEditTime: 2026-09-19 12:28:52
  * @Description: 工具类
  */
 
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
+
+import 'app_text.dart';
 
 class DateUtil {
   // 将 ISO8601 字符串转换为 yyyy-MM-dd HH:mm 格式
@@ -87,7 +89,7 @@ class MessageUtil {
               textAlign: TextAlign.center,
               style: const TextStyle(
                 color: Colors.white,
-                fontSize: 14,
+                fontSize: AppText.body,
                 fontFamily: 'Segoe UI',
                 fontFamilyFallback: ['Microsoft YaHei'],
               ),

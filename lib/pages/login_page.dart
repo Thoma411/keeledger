@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 19:47:45
- * @LastEditTime: 2026-09-18 22:13:36
+ * @LastEditTime: 2026-09-19 12:31:06
  * @Description: 初始登入界面
  */
 
@@ -10,6 +10,7 @@ import 'package:flutter/services.dart';
 
 import '../pages/shell_page.dart'; // 用于跳转到主框架
 import '../services/auth_service.dart';
+import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import '../widgets/app_dialogs.dart';
 
@@ -250,7 +251,10 @@ class _UnlockPageState extends State<UnlockPage> {
                 const SizedBox(height: 24),
                 const Text(
                   "身份验证",
-                  style: TextStyle(fontSize: 24, fontWeight: FontWeight.bold),
+                  style: TextStyle(
+                    fontSize: AppText.display,
+                    fontWeight: FontWeight.bold,
+                  ),
                 ),
                 const SizedBox(height: 12),
                 Text(
@@ -317,7 +321,7 @@ class _UnlockPageState extends State<UnlockPage> {
                     "忘记主密码？",
                     style: TextStyle(
                       color: Theme.of(context).colorScheme.onSurfaceVariant,
-                      fontSize: 13,
+                      fontSize: AppText.sub,
                     ),
                   ),
                 ),
