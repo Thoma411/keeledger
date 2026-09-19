@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-09-19 00:06:49
+ * @LastEditTime: 2026-09-19 15:37:13
  * @Description: 账户信息详情页
  */
 
@@ -168,7 +168,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                   const SizedBox(height: 4),
                   // 与编辑态下拉框同高
                   SizedBox(
-                    height: 35,
+                    height: AccountUiUtils.scaledFixed(context, 35),
                     child: Align(
                       alignment: Alignment.centerLeft,
                       child: AccountUiUtils.buildStatusChip(_currentStatus),
@@ -187,7 +187,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                   const SizedBox(height: 4),
                   // 状态变下拉框
                   SizedBox(
-                    height: 35,
+                    height: AccountUiUtils.scaledFixed(context, 35),
                     child: DropdownButton<int>(
                       value: _currentStatus,
                       isDense: true,
@@ -979,7 +979,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                 const SizedBox(height: 6),
                 // 状态修改下拉菜单
                 SizedBox(
-                  height: 30,
+                  height: AccountUiUtils.scaledFixed(context, 30),
                   child: DropdownButton<int>(
                     value: _currentStatus,
                     isDense: true,

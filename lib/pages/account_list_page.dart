@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-18 22:16:22
+ * @LastEditTime: 2026-09-19 15:34:51
  * @Description: 账户信息页(查看页)
  */
 
@@ -311,7 +311,9 @@ class AccountListPageState extends State<AccountListPage> {
     }
     final int? index = _alphabetIndexMap[char];
     if (index != null) {
-      final double targetOffset = index * 68.0; // 计算位置(假设itemExtent为68.0)
+      // 行高与列表 itemExtent 保持一致
+      final double targetOffset =
+          index * AccountUiUtils.scaledFixed(context, 68);
       // 检查目标位置是否合法(不超出最大滚动范围)
       final maxScroll = _scrollController.position.maxScrollExtent;
       final finalOffset = targetOffset > maxScroll ? maxScroll : targetOffset;
@@ -713,7 +715,8 @@ class AccountListPageState extends State<AccountListPage> {
                 bottom: isMobileLayout ? 0 : 8, // 移动端留白由统计条的下边距承担
               ),
               sliver: SliverFixedExtentList(
-                itemExtent: 68.0, // Container高度60 + 上下边距4*2
+                // 行高基准 68(卡片 60 + 上下边距 4×2), 随字号档位放大
+                itemExtent: AccountUiUtils.scaledFixed(context, 68),
                 delegate: SliverChildBuilderDelegate(
                   (context, index) =>
                       _buildAccountItem(index, classicStyle, isMobileLayout),
@@ -750,9 +753,10 @@ class AccountListPageState extends State<AccountListPage> {
 
     // 底栏(仅电脑端): 固定展示统计信息
     final Widget bottomBar = Container(
-      height: 25,
+      constraints: const BoxConstraints(minHeight: 25),
       width: double.infinity,
-      padding: const EdgeInsets.symmetric(horizontal: 16),
+      // 高度由内容+内边距决定(标准字体=25) 大字号下自动变高
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 3),
       decoration: BoxDecoration(
         color: Theme.of(context).colorScheme.surface,
         border: Border(

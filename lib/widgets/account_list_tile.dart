@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-10 00:00:25
- * @LastEditTime: 2026-09-10 00:30:07
+ * @LastEditTime: 2026-09-19 15:37:26
  * @Description: 经典样式账户列表
  */
 
@@ -85,7 +85,7 @@ class _AccountListTileState extends State<AccountListTile> {
     return InkWell(
       onTap: widget.onTap,
       child: Container(
-        height: 68, // 与卡片行高一致
+        height: AccountUiUtils.scaledFixed(context, 68), // 与卡片行高一致随字号档位放大
         decoration: BoxDecoration(
           color: widget.isSelected
               ? cs.primary.withValues(alpha: 0.06)

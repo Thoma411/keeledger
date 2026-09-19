@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:13:52
- * @LastEditTime: 2026-09-18 14:13:56
+ * @LastEditTime: 2026-09-19 15:34:27
  * @Description: 视觉样式&辅助组件工具类
  */
 
@@ -37,6 +37,10 @@ class AccountUiUtils {
         SettingsService().get('force_desktop_mode') == 'true';
     return !forceDesktop;
   }
+
+  // 固定尺寸(行高/控件高)随字号档位与系统缩放等比放大(上限 1.6)
+  static double scaledFixed(BuildContext context, double base) =>
+      base * MediaQuery.textScalerOf(context).scale(1.0).clamp(1.0, 1.6);
 
   // shield icon彩蛋
   static IconData shieldIcon(BuildContext context) =>

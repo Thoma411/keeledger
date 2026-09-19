@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:26:04
- * @LastEditTime: 2026-06-25 23:17:42
+ * @LastEditTime: 2026-09-19 15:36:07
  * @Description: 账户卡片
  */
 
@@ -102,7 +102,7 @@ class _AccountCardState extends State<AccountCard> {
         onTap: widget.onTap,
         borderRadius: BorderRadius.circular(12),
         child: Container(
-          height: 60, // 单个条目行高
+          height: AccountUiUtils.scaledFixed(context, 60), // 单个条目行高随字号档位放大
           decoration: BoxDecoration(
             color: Theme.of(context).colorScheme.surface,
             borderRadius: BorderRadius.circular(12),
