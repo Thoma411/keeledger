@@ -22,6 +22,7 @@ import '../services/csv_service.dart';
 import '../services/update_service.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/app_dialogs.dart';
+import '../utils/app_paths.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
@@ -159,6 +160,50 @@ class SettingsPageState extends State<SettingsPage> {
         _appPath = path;
       });
     }
+  }
+
+  // 数据目录(便携模式下为 <exe>/data)
+  String get _dataPath => AppPaths.isInitialized ? AppPaths.root : "";
+
+  // 路径文本(等宽 + 小字)
+  Widget _pathText(String path, String emptyHint) {
+    return Text(
+      path.isEmpty ? emptyHint : path,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      style: TextStyle(
+        fontFamily: 'Consolas',
+        fontFamilyFallback: const ['Microsoft YaHei'],
+        fontSize: AppText.label,
+        color: Theme.of(
+          context,
+        ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
+      ),
+    );
+  }
+
+  // 桌面端: 复制路径并打开目录; 触屏端: 仅提示长按复制
+  Future<void> _revealPath(String path) async {
+    if (path.isEmpty) return;
+    if (AccountUiUtils.isTouchDevice()) {
+      MessageUtil.show(context, "长按以复制路径");
+      return;
+    }
+    await _copyPath(path);
+    if (!mounted) return;
+    if (Platform.isWindows) {
+      await Process.run('explorer.exe', [path]);
+    } else if (Platform.isMacOS) {
+      await Process.run('open', [path]);
+    } else if (Platform.isLinux) {
+      await Process.run('xdg-open', [path]);
+    }
+  }
+
+  Future<void> _copyPath(String path) async {
+    await Clipboard.setData(ClipboardData(text: path));
+    if (!mounted) return;
+    MessageUtil.show(context, "路径已复制至剪贴板");
   }
 
   // 检查数据库状态 决定是否允许配置WebDAV
@@ -720,44 +765,21 @@ class SettingsPageState extends State<SettingsPage> {
         const Divider(),
         ListTile(
           title: const Text("应用路径"),
-          subtitle: Text(
-            _appPath.isEmpty ? "正在载入路径..." : _appPath,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: TextStyle(
-              fontFamily: 'Consolas',
-              fontFamilyFallback: const ['Microsoft YaHei'],
-              fontSize: AppText.label,
-              color: Theme.of(
-                context,
-              ).colorScheme.onSurfaceVariant.withValues(alpha: 0.8),
-            ),
-          ),
+          subtitle: _pathText(_appPath, "正在载入路径..."),
           leading: const Icon(Icons.folder_open_rounded),
-          onTap: _appPath.isEmpty
-              ? null
-              : () async {
-                  if (AccountUiUtils.isTouchDevice()) {
-                    MessageUtil.show(context, "长按以复制路径");
-                  } else {
-                    await Clipboard.setData(ClipboardData(text: _appPath));
-                    if (!context.mounted) return;
-                    MessageUtil.show(context, "路径已复制至剪贴板");
-                    if (Platform.isWindows) {
-                      await Process.run('explorer.exe', [_appPath]);
-                    } else if (Platform.isMacOS) {
-                      await Process.run('open', [_appPath]);
-                    } else if (Platform.isLinux) {
-                      await Process.run('xdg-open', [_appPath]);
-                    }
-                  }
-                },
+          onTap: _appPath.isEmpty ? null : () => _revealPath(_appPath),
           onLongPress: (AccountUiUtils.isTouchDevice() && _appPath.isNotEmpty)
-              ? () async {
-                  await Clipboard.setData(ClipboardData(text: _appPath));
-                  if (!context.mounted) return;
-                  MessageUtil.show(context, "路径已复制至剪贴板");
-                }
+              ? () => _copyPath(_appPath)
+              : null,
+        ),
+        const Divider(),
+        ListTile(
+          title: const Text("数据目录"),
+          subtitle: _pathText(_dataPath, "未初始化"),
+          leading: const Icon(Icons.folder_special_outlined),
+          onTap: _dataPath.isEmpty ? null : () => _revealPath(_dataPath),
+          onLongPress: (AccountUiUtils.isTouchDevice() && _dataPath.isNotEmpty)
+              ? () => _copyPath(_dataPath)
               : null,
         ),
         const Divider(),

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-09 23:51:46
- * @LastEditTime: 2026-09-18 13:46:18
+ * @LastEditTime: 2026-09-20 22:26:51
  * @Description: main
  */
 
@@ -15,6 +15,7 @@ import 'pages/login_page.dart';
 import 'pages/shell_page.dart';
 import 'services/storage_service.dart';
 import 'services/settings_service.dart';
+import 'utils/app_paths.dart';
 import 'utils/app_text.dart';
 import 'utils/utils.dart';
 
@@ -59,6 +60,7 @@ void main() async {
       await windowManager.focus();
     });
   }
+  await AppPaths.init(); // 确定数据落点
   await SettingsService().init(); // 加载本地配置
 
   // 探测本地数据库是否存在

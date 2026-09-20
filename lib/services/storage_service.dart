@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-03 23:49:04
+ * @LastEditTime: 2026-09-20 22:01:28
  * @Description: 与SQLite交互的方法
  */
 
@@ -12,6 +12,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/account.dart';
+import '../utils/app_paths.dart';
 import 'settings_service.dart';
 import 'icon_service.dart';
 
@@ -50,8 +51,9 @@ class StorageService {
     if (overrideDbPath != null) return overrideDbPath!;
     if (Platform.isWindows) {
       sqfliteFfiInit(); // 仅Windows需要
-      final dbPath = await databaseFactoryFfi.getDatabasesPath();
-      return join(dbPath, 'keeledger.db');
+      // 便携位置: <exe>/data/keeledger.db(历史位置的库已在 AppPaths.init 中平移)
+      await Directory(dirname(AppPaths.dbFile)).create(recursive: true);
+      return AppPaths.dbFile;
     } else {
       // Android路径获取
       final directory = await getApplicationDocumentsDirectory();

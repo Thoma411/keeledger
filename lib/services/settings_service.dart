@@ -1,13 +1,18 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-18 14:16:57
+ * @LastEditTime: 2026-09-20 22:43:20
  * @Description: 设置
  */
 
+import 'dart:convert';
+import 'dart:io';
+
+import 'package:flutter/foundation.dart';
 import 'package:sqflite/sqflite.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
+import '../utils/app_paths.dart';
 import 'security_service.dart';
 import 'storage_service.dart';
 
@@ -16,7 +21,8 @@ class SettingsService {
   factory SettingsService() => _instance;
   SettingsService._internal();
 
-  SharedPreferences? _prefs;
+  SharedPreferences? _prefs; // 非便携端: shared_preferences
+  final Map<String, String> _localCache = {}; // 便携端(Windows): settings.json
   final Map<String, String> _dbCache = {}; // 内存缓存数据库项
 
   // 定义哪些 Key 属于本地配置（不进数据库）
@@ -38,9 +44,38 @@ class SettingsService {
     'need_revision_alignment', // 对齐哨兵，确定是否更新本地版本锚点
   };
 
+  // Windows且已确定落点时用settings.json, 其余端用shared_preferences
+  bool get _useSettingsFile => Platform.isWindows && AppPaths.isInitialized;
+
   // 1. 初始化：应用启动即调用
   Future<void> init() async {
+    if (_useSettingsFile) {
+      await _loadSettingsFile();
+      return;
+    }
     _prefs = await SharedPreferences.getInstance();
+  }
+
+  Future<void> _loadSettingsFile() async {
+    _localCache.clear();
+    try {
+      final File f = File(AppPaths.settingsFile);
+      if (!await f.exists()) return;
+      final Map<String, dynamic> data =
+          jsonDecode(await f.readAsString()) as Map<String, dynamic>;
+      data.forEach((k, v) => _localCache[k] = v.toString());
+    } catch (e) {
+      debugPrint("SettingsService: 读取设置文件失败(按空处理): $e");
+      _localCache.clear();
+    }
+  }
+
+  Future<void> _saveSettingsFile() async {
+    try {
+      await File(AppPaths.settingsFile).writeAsString(jsonEncode(_localCache));
+    } catch (e) {
+      debugPrint("SettingsService: 写入设置文件失败: $e");
+    }
   }
 
   // 2. 加载数据库项：仅在解锁成功后调用
@@ -72,6 +107,7 @@ class SettingsService {
   // 3. 统一读取
   String? get(String key, {String? defaultValue}) {
     if (_localKeys.contains(key)) {
+      if (_useSettingsFile) return _localCache[key] ?? defaultValue;
       return _prefs?.getString(key) ?? defaultValue;
     }
     return _dbCache[key] ?? defaultValue;
@@ -107,13 +143,18 @@ class SettingsService {
 
   // 4. 统一写入
   Future<void> set(String key, String value, {bool isEncrypted = false}) async {
-    // 路径 A: 本地配置项
+    // 路径A: 本地配置项
     if (_localKeys.contains(key)) {
-      await _prefs?.setString(key, value);
+      if (_useSettingsFile) {
+        _localCache[key] = value;
+        await _saveSettingsFile();
+      } else {
+        await _prefs?.setString(key, value);
+      }
       return;
     }
 
-    // 路径 B: 数据库配置项
+    // 路径B: 数据库配置项
     // 检查：如果数据库还没创建，拦截写入，防止非法建库
     if (!await StorageService().isDatabaseExists()) {
       throw Exception("请先初始化保险箱，再修改同步类设置项");
