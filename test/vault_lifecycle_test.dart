@@ -1,10 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-29 17:12:55
- * @LastEditTime: 2026-09-03 23:42:40
+ * @LastEditTime: 2026-09-20 23:47:43
  * @Description: 保险箱生命周期回归测试(建库/解锁/改密/找回)
  */
 
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:flutter_test/flutter_test.dart';
@@ -125,5 +126,27 @@ void main() {
     expect(back.favorite, isTrue);
     expect(back.platform, 'GitHub');
     expect(back.email, 'e@x.com'); // 敏感字段经DK解密后正常
+  });
+
+  test('v2迁移: 标记已置位时, 带MK的解锁仍会补升级 edk_m', () async {
+    final storage = StorageService();
+    final sec = SecurityService();
+
+    // 构造“只用指纹解锁过”的状态: edk_m 停在v1, 但迁移标记已是true
+    final String edkM = (await storage.getMetadata('edk_m'))!;
+    expect(edkM.startsWith('v2:'), isTrue); // 新库本应为v2
+    final List<int> body = base64.decode(edkM.split(':').last);
+    await storage.saveMetadata(
+      'edk_m',
+      base64.encode(body.sublist(0, body.length - 16)), // 剥掉前缀与Tag即v1
+    );
+    await SettingsService().set('crypto_v2_upgraded', 'true');
+
+    // 主密码解锁(会调用 upgradeCipherToV2(mk))
+    sec.clearKeys();
+    expect(await AuthService().verifyPassword('password123'), isTrue);
+
+    final String after = (await storage.getMetadata('edk_m'))!;
+    expect(after.startsWith('v2:'), isTrue, reason: 'edk_m 应被补升级为 v2');
   });
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 17:27:11
- * @LastEditTime: 2026-08-30 23:03:48
+ * @LastEditTime: 2026-09-20 23:47:07
  * @Description: 加解密方法
  */
 
@@ -63,9 +63,9 @@ class SecurityService {
     return _v2Prefix + base64.encode(combined);
   }
 
-  // 核心解密方法: 自动识别 v1/v2
+  // 核心解密方法: 自动识别v1/v2
   // v2: 校验认证标签, 密钥错误或密文被篡改时抛异常(确定性拒绝)
-  // v1: 无认证(与历史实现一致), 密钥正确性由调用方 EVB 验证兜底
+  // v1: 无认证(与历史实现一致), 密钥正确性由调用方EVB验证兜底
   String decrypt(String encodedData, Uint8List key) {
     if (!encodedData.startsWith(_v2Prefix)) {
       return _decryptLegacy(encodedData, key);
@@ -82,7 +82,7 @@ class SecurityService {
     return utf8.decode(decrypted);
   }
 
-  // 兼容旧格式(v1, 无认证标签)的解密: 复刻 encrypt 包 processBlock 循环行为
+  // 兼容旧格式(v1, 无认证标签)的解密: 复刻encrypt包processBlock循环行为
   String _decryptLegacy(String encodedData, Uint8List key) {
     final combined = base64.decode(encodedData);
     final iv = combined.sublist(0, 12);
@@ -126,7 +126,14 @@ class SecurityService {
     final dk = currentDataKey;
     if (dk == null) return;
     final settings = SettingsService();
-    if (settings.get('crypto_v2_upgraded') == 'true') return; // 已升级
+
+    if (mk != null) {
+      final edkM = await storage.getMetadata('edk_m');
+      if (edkM != null && !edkM.startsWith(_v2Prefix)) {
+        await storage.saveMetadata('edk_m', encrypt(base64.encode(dk), mk));
+      }
+    }
+    if (settings.get('crypto_v2_upgraded') == 'true') return; // 其余部分已升级
 
     // 1. 元数据: evb/erk用DK重包装; edk_r用从erk解出的RK重包装
     final evb = await storage.getMetadata('evb');
@@ -146,12 +153,7 @@ class SecurityService {
         );
       }
     }
-    // 2. edk_m用MK重包装(仅验证主密码路径提供mk)
-    final edkM = await storage.getMetadata('edk_m');
-    if (mk != null && edkM != null && !edkM.startsWith(_v2Prefix)) {
-      await storage.saveMetadata('edk_m', encrypt(base64.encode(dk), mk));
-    }
-    // 3. accounts表密文字段全部重加密为v2
+    // 2. accounts表密文字段全部重加密为v2
     await _upgradeAccountsToV2();
     await settings.set('crypto_v2_upgraded', 'true');
   }
