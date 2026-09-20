@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-20 22:57:06
+ * @LastEditTime: 2026-09-20 23:39:51
  * @Description: 设置页
  */
 
@@ -22,7 +22,6 @@ import '../services/csv_service.dart';
 import '../services/update_service.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/app_dialogs.dart';
-import '../utils/app_paths.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
@@ -162,9 +161,6 @@ class SettingsPageState extends State<SettingsPage> {
     }
   }
 
-  // 数据目录(便携模式下为 <exe>/data)
-  String get _dataPath => AppPaths.isInitialized ? AppPaths.root : "";
-
   // 路径文本(等宽 + 小字)
   Widget _pathText(String path, String emptyHint) {
     return Text(
@@ -237,11 +233,11 @@ class SettingsPageState extends State<SettingsPage> {
     AppDialogs.showInputForm(
       context,
       title: "配置WebDAV云同步",
-      message: "建议使用坚果云等支持WebDAV的网盘。同步数据将以加密形式上传。",
+      message: "应用目前仅支持坚果云，不保证对其他云盘可用。",
       fields: [
         AppDialogField(
           controller: urlController,
-          label: "服务器地址 (如: https://dav.jianguoyun.com/dav/)",
+          label: "服务器地址",
         ),
         AppDialogField(controller: userController, label: "账号 (邮箱)"),
         AppDialogField(controller: pwdController, label: "应用密码", obscure: true),
@@ -289,14 +285,14 @@ class SettingsPageState extends State<SettingsPage> {
         crossAxisAlignment: CrossAxisAlignment.start, // 左对齐
         children: [
           Text(
-            "导出操作会将您的所有账户密码以【明文】形式保存为 CSV 文件。",
+            "导出操作会将所有账户密码以【明文】形式保存为 CSV 文件。",
             style: TextStyle(
               color: Theme.of(context).colorScheme.error,
               fontWeight: FontWeight.bold,
             ),
           ),
           const SizedBox(height: 10),
-          const Text("任何人打开此文件均可见您的敏感信息，请在安全的环境下操作，并在使用后妥善保管或销毁该文件。"),
+          const Text("任何打开此文件的人均可见您的敏感信息，请在安全环境下操作，并在使用后妥善保管或销毁该文件。"),
         ],
       ),
       confirmText: "确认导出",
@@ -431,7 +427,7 @@ class SettingsPageState extends State<SettingsPage> {
           obscure: true,
         ),
       ],
-      confirmText: "确认修改并重新登录",
+      confirmText: "确认修改",
       onConfirm: (dialogContext) async {
         String newPw = newPwController.text;
         if (newPw != confirmPwController.text || newPw.length < 6) {
@@ -770,16 +766,6 @@ class SettingsPageState extends State<SettingsPage> {
           onTap: _appPath.isEmpty ? null : () => _revealPath(_appPath),
           onLongPress: (AccountUiUtils.isTouchDevice() && _appPath.isNotEmpty)
               ? () => _copyPath(_appPath)
-              : null,
-        ),
-        const Divider(),
-        ListTile(
-          title: const Text("数据目录"),
-          subtitle: _pathText(_dataPath, "未初始化"),
-          leading: const Icon(Icons.folder_special_outlined),
-          onTap: _dataPath.isEmpty ? null : () => _revealPath(_dataPath),
-          onLongPress: (AccountUiUtils.isTouchDevice() && _dataPath.isNotEmpty)
-              ? () => _copyPath(_dataPath)
               : null,
         ),
         const Divider(),
