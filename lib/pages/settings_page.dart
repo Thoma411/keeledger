@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-20 23:39:51
+ * @LastEditTime: 2026-09-23 23:14:13
  * @Description: 设置页
  */
 
@@ -16,7 +16,7 @@ import '../services/auth_service.dart';
 import '../services/settings_service.dart';
 import '../services/storage_service.dart';
 import '../services/security_service.dart';
-import '../services/icon_service.dart';
+import '../services/icon_store.dart';
 import '../services/webdav_service.dart';
 import '../services/csv_service.dart';
 import '../services/update_service.dart';
@@ -129,10 +129,10 @@ class SettingsPageState extends State<SettingsPage> {
     AppDialogs.showConfirm(
       context,
       title: "清除图标缓存",
-      message: "这将删除本地存储的全部网站的图标。",
+      message: "这将删除自动抓取的全部图标。",
       onConfirm: () async {
         try {
-          await IconService().clearAllIcons();
+          await IconStore().clearCache();
           if (mounted) MessageUtil.show(context, "缓存已清空");
         } catch (e) {
           if (mounted) MessageUtil.show(context, "清除失败: $e");
@@ -235,10 +235,7 @@ class SettingsPageState extends State<SettingsPage> {
       title: "配置WebDAV云同步",
       message: "应用目前仅支持坚果云，不保证对其他云盘可用。",
       fields: [
-        AppDialogField(
-          controller: urlController,
-          label: "服务器地址",
-        ),
+        AppDialogField(controller: urlController, label: "服务器地址"),
         AppDialogField(controller: userController, label: "账号 (邮箱)"),
         AppDialogField(controller: pwdController, label: "应用密码", obscure: true),
       ],
@@ -792,7 +789,7 @@ class SettingsPageState extends State<SettingsPage> {
         const Divider(),
         ListTile(
           title: const Text("清除图标缓存"),
-          subtitle: const Text("删除已下载的所有本地图标文件"),
+          subtitle: const Text("删除自动抓取的图标缓存（手动指定的图标除外）"),
           leading: const Icon(Icons.delete_sweep_outlined),
           onTap: _handleClearIcons,
         ),

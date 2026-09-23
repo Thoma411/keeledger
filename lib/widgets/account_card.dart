@@ -1,17 +1,16 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 22:26:04
- * @LastEditTime: 2026-09-19 15:36:07
+ * @LastEditTime: 2026-09-23 23:16:23
  * @Description: 账户卡片
  */
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:path/path.dart' as p;
 
 import '../models/account.dart';
 import '../services/icon_service.dart';
+import '../services/icon_store.dart';
 import '../services/settings_service.dart';
 import '../utils/app_text.dart';
 import 'account_ui_utils.dart';
@@ -20,7 +19,6 @@ class AccountCard extends StatefulWidget {
   final Account account;
   final bool isSelected;
   final bool isPasswordVisible;
-  final String iconDirPath;
   final VoidCallback onTap;
   final VoidCallback onTogglePassword; // 点击眼睛图标回调
   final VoidCallback onCopyPassword;
@@ -31,7 +29,6 @@ class AccountCard extends StatefulWidget {
     required this.account,
     required this.isSelected,
     required this.isPasswordVisible,
-    required this.iconDirPath,
     required this.onTap,
     required this.onTogglePassword,
     required this.onCopyPassword,
@@ -45,14 +42,12 @@ class AccountCard extends StatefulWidget {
 class _AccountCardState extends State<AccountCard> {
   // 构建卡片左侧的平台小图标/占位符
   Widget _buildSmallLogo(Account acc, Color color) {
-    final String iconPath = p.join(widget.iconDirPath, "${acc.id}.png");
-    final File iconFile = File(iconPath);
-    // 本地文件已存在，直接渲染图片
-    if (iconFile.existsSync()) {
+    final icon = IconStore().iconFor(acc);
+    if (icon != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          iconFile,
+        child: Image.memory(
+          icon,
           width: 40,
           height: 40,
           fit: BoxFit.cover,
@@ -61,15 +56,13 @@ class _AccountCardState extends State<AccountCard> {
         ),
       );
     }
-    final bool isAutoFetchEnabled =
-        SettingsService().get('auto_fetch_icons') == 'true';
-    // 用户允许抓取时，有网址&本地不存在&并非正在被删除，发起后台静默抓取
-    if (isAutoFetchEnabled && acc.url.isNotEmpty) {
-      IconService().fetchAndCacheIcon(acc.id, acc.url).then((_) {
-        if (mounted) setState(() {}); // 抓取成功后刷新UI
+    // 允许自动抓取且有网址时发起后台静默抓取, 成功后刷新UI
+    if (SettingsService().get('auto_fetch_icons') == 'true' &&
+        acc.url.isNotEmpty) {
+      IconService().fetchAndCacheIcon(acc.url).then((ok) {
+        if (mounted && ok) setState(() {});
       });
     }
-    // 抓取期间/无网址时显示首字母占位符
     return AccountUiUtils.buildPlaceholder(acc.platform, color, 40, 18, 8);
   }
 

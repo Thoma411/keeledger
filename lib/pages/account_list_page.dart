@@ -8,9 +8,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:webdav_client/webdav_client.dart' as dav;
-import 'package:path/path.dart' as p;
-import 'package:path_provider/path_provider.dart';
-
 import '../models/account.dart';
 import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
@@ -53,8 +50,6 @@ class AccountListPageState extends State<AccountListPage> {
 
   Set<String> _globalTags = {}; // 用于自动补全提示
 
-  String _iconDirPath = ""; // 缓存路径字符串
-
   // 排序依据
   String _sortBy = 'platform'; // platform/last_modified
   bool _isAscending = true; // 默认升序
@@ -73,7 +68,6 @@ class AccountListPageState extends State<AccountListPage> {
     _isAscending =
         _settings.get('sort_ascending', defaultValue: 'true') == 'true';
     _listStyle = _settings.get('list_style');
-    _prepareIconPath();
     _checkDbStatus();
     refreshAccountList();
   }
@@ -113,14 +107,6 @@ class AccountListPageState extends State<AccountListPage> {
       _globalTags = data.expand((acc) => acc.tags).toSet(); // tags列表展开并去重
       // 刷新时根据当前搜索框内容过滤
       _filterAccounts(_searchController.text);
-    });
-  }
-
-  // 目录路径预取
-  Future<void> _prepareIconPath() async {
-    final directory = await getApplicationSupportDirectory();
-    setState(() {
-      _iconDirPath = p.join(directory.path, 'vault_icons');
     });
   }
 
@@ -246,7 +232,6 @@ class AccountListPageState extends State<AccountListPage> {
             body: SafeArea(
               child: AccountDetailView(
                 account: acc,
-                iconDirPath: _iconDirPath,
                 globalTags: _globalTags,
                 onClose: () => Navigator.of(context).pop(), // 返回: Pop路由
                 onSaveSuccess: () => refreshAccountList(),
@@ -654,7 +639,6 @@ class AccountListPageState extends State<AccountListPage> {
       return AccountListTile(
         account: acc,
         isSelected: _selectedAccountId == acc.id,
-        iconDirPath: _iconDirPath,
         onTap: () => _onAccountSelected(index),
         onToggleFavorite: () => _toggleFavorite(acc),
         isMobileLayout: isMobileLayout,
@@ -664,7 +648,6 @@ class AccountListPageState extends State<AccountListPage> {
       account: acc,
       isSelected: _selectedAccountId == acc.id,
       isPasswordVisible: _visiblePasswordIds.contains(acc.id),
-      iconDirPath: _iconDirPath,
       onTap: () => _onAccountSelected(index),
       onTogglePassword: () {
         setState(() {
@@ -954,7 +937,6 @@ class AccountListPageState extends State<AccountListPage> {
                               );
                               return AccountDetailView(
                                 account: account,
-                                iconDirPath: _iconDirPath,
                                 globalTags: _globalTags,
                                 onClose: _closePanel,
                                 onSaveSuccess: () async {

@@ -89,9 +89,7 @@ class WebDavService {
     try {
       final auth =
           'Basic ${base64.encode(utf8.encode('$_currentUser:$_currentPwd'))}';
-      final targetUri = Uri.parse(
-        '${_currentUrl!}keeledger/keeledger.db',
-      );
+      final targetUri = Uri.parse('${_currentUrl!}keeledger/keeledger.db');
 
       // 核心修改：使用 PROPFIND 替代 HEAD 以获取 ETag
       final request = http.Request('PROPFIND', targetUri)

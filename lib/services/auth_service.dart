@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-03-21 18:50:58
- * @LastEditTime: 2026-09-17 13:47:20
+ * @LastEditTime: 2026-09-23 23:14:00
  * @Description: 解锁与认证
  */
 
@@ -9,6 +9,7 @@ import 'dart:convert';
 import 'package:flutter/foundation.dart';
 
 import 'biometric_keystore.dart';
+import 'icon_store.dart';
 import 'security_service.dart';
 import 'settings_service.dart';
 import 'storage_service.dart';
@@ -85,6 +86,7 @@ class AuthService {
 
     // 5. 激活内存密钥
     _sec.setDK(dkBytes);
+    await IconStore().load(); // 新库图标为空
     await SettingsService().set('crypto_v2_upgraded', 'true'); // 新库全为v2
     return rkString;
   }
@@ -272,6 +274,7 @@ class AuthService {
     }
     // 就地升级旧版(v1)密文到v2带认证格式(幂等)
     await _sec.upgradeCipherToV2(mk: mk);
+    await IconStore().load(); // 图标索引与当前库对齐
   }
 }
 

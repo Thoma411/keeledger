@@ -1,12 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-18 23:52:02
- * @LastEditTime: 2026-09-19 00:19:44
+ * @LastEditTime: 2026-09-23 23:18:11
  * @Description: 详情页信息行高度一致性回归测试
  */
 
 import 'dart:io';
-
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -55,7 +54,6 @@ void main() {
           body: AccountDetailView(
             key: UniqueKey(), // 强制重建, 避免复用上一次的编辑态状态
             account: acc,
-            iconDirPath: tempDir.path,
             globalTags: const {'金融', '日常'},
             onClose: () {},
             onSaveSuccess: () {},

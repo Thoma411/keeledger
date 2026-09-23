@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-20 22:01:28
+ * @LastEditTime: 2026-09-23 23:15:25
  * @Description: 与SQLite交互的方法
  */
 
@@ -119,6 +119,20 @@ class StorageService {
 
   // 幂等补列
   Future<void> _ensureSchema(Database db) async {
+    // 图标表: 账户专属图标 + 共享缓存(按 domain/平台名)
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS account_icons (
+        id TEXT PRIMARY KEY,
+        data BLOB NOT NULL
+      )
+    ''');
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS icon_cache (
+        key TEXT PRIMARY KEY,
+        data BLOB NOT NULL
+      )
+    ''');
+
     if (_additionalAccountColumns.isEmpty) return;
     final existing = <String>{};
     final info = await db.rawQuery('PRAGMA table_info(accounts)');

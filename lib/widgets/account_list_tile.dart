@@ -1,16 +1,15 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-10 00:00:25
- * @LastEditTime: 2026-09-19 15:37:26
+ * @LastEditTime: 2026-09-23 23:17:58
  * @Description: 经典样式账户列表
  */
 
-import 'dart:io';
 import 'package:flutter/material.dart';
-import 'package:path/path.dart' as p;
 
 import '../models/account.dart';
 import '../services/icon_service.dart';
+import '../services/icon_store.dart';
 import '../services/settings_service.dart';
 import '../utils/app_text.dart';
 import 'account_ui_utils.dart';
@@ -18,7 +17,6 @@ import 'account_ui_utils.dart';
 class AccountListTile extends StatefulWidget {
   final Account account;
   final bool isSelected; // 桌面端右侧面板选中高亮
-  final String iconDirPath;
   final VoidCallback onTap;
   final VoidCallback onToggleFavorite; // 星标切换
   final bool isMobileLayout;
@@ -27,7 +25,6 @@ class AccountListTile extends StatefulWidget {
     super.key,
     required this.account,
     required this.isSelected,
-    required this.iconDirPath,
     required this.onTap,
     required this.onToggleFavorite,
     this.isMobileLayout = false,
@@ -40,13 +37,12 @@ class AccountListTile extends StatefulWidget {
 class _AccountListTileState extends State<AccountListTile> {
   // 平台小图标(后台静默抓取逻辑与卡片一致)
   Widget _buildLogo(Account acc, Color color) {
-    final String iconPath = p.join(widget.iconDirPath, "${acc.id}.png");
-    final File iconFile = File(iconPath);
-    if (iconFile.existsSync()) {
+    final icon = IconStore().iconFor(acc);
+    if (icon != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          iconFile,
+        child: Image.memory(
+          icon,
           width: 36,
           height: 36,
           fit: BoxFit.cover,
@@ -55,11 +51,10 @@ class _AccountListTileState extends State<AccountListTile> {
         ),
       );
     }
-    final bool isAutoFetchEnabled =
-        SettingsService().get('auto_fetch_icons') == 'true';
-    if (isAutoFetchEnabled && acc.url.isNotEmpty) {
-      IconService().fetchAndCacheIcon(acc.id, acc.url).then((_) {
-        if (mounted) setState(() {}); // 抓取成功后刷新UI
+    if (SettingsService().get('auto_fetch_icons') == 'true' &&
+        acc.url.isNotEmpty) {
+      IconService().fetchAndCacheIcon(acc.url).then((ok) {
+        if (mounted && ok) setState(() {});
       });
     }
     return AccountUiUtils.buildPlaceholder(acc.platform, color, 36, 16, 8);

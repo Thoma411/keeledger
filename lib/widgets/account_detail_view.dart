@@ -1,19 +1,18 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-09-19 15:37:13
+ * @LastEditTime: 2026-09-23 23:16:34
  * @Description: 账户信息详情页
  */
 
-import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/account.dart';
+import '../services/icon_store.dart';
 import '../services/storage_service.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
@@ -22,7 +21,6 @@ import 'app_dialogs.dart';
 
 class AccountDetailView extends StatefulWidget {
   final Account account;
-  final String iconDirPath;
   final Set<String> globalTags;
   final VoidCallback onClose;
   final VoidCallback onSaveSuccess; // 数据保存成功回调
@@ -32,7 +30,6 @@ class AccountDetailView extends StatefulWidget {
   const AccountDetailView({
     super.key,
     required this.account,
-    required this.iconDirPath,
     required this.globalTags,
     required this.onClose,
     required this.onSaveSuccess,
@@ -257,10 +254,8 @@ class _AccountDetailViewState extends State<AccountDetailView> {
   // 构建详情面板顶部的平台大图标/占位符
   Widget _buildLargeLogo(Account account) {
     final Color color = AccountUiUtils.getStatusColor(account.status);
-    final String iconPath = p.join(widget.iconDirPath, "${account.id}.png");
-    final File iconFile = File(iconPath);
-    // 本地文件已存在，直接渲染图片
-    if (iconFile.existsSync()) {
+    final icon = IconStore().iconFor(account);
+    if (icon != null) {
       return Container(
         width: 64,
         height: 64,
@@ -270,8 +265,8 @@ class _AccountDetailViewState extends State<AccountDetailView> {
         ),
         child: ClipRRect(
           borderRadius: BorderRadius.circular(15),
-          child: Image.file(
-            iconFile,
+          child: Image.memory(
+            icon,
             fit: BoxFit.cover,
             errorBuilder: (context, error, stackTrace) =>
                 AccountUiUtils.buildPlaceholder(
@@ -285,20 +280,18 @@ class _AccountDetailViewState extends State<AccountDetailView> {
         ),
       );
     }
-    // 抓取期间/无网址时显示首字母占位符
+    // 未抓取/未指定时显示首字母占位符
     return AccountUiUtils.buildPlaceholder(account.platform, color, 64, 28, 16);
   }
 
   // 构建详情页内小图标
   Widget _buildSmallLogo(Account acc, Color color) {
-    final String iconPath = p.join(widget.iconDirPath, "${acc.id}.png");
-    final File iconFile = File(iconPath);
-    // 本地图片文件存在，直接读取渲染
-    if (iconFile.existsSync()) {
+    final icon = IconStore().iconFor(acc);
+    if (icon != null) {
       return ClipRRect(
         borderRadius: BorderRadius.circular(8),
-        child: Image.file(
-          iconFile,
+        child: Image.memory(
+          icon,
           width: 40,
           height: 40,
           fit: BoxFit.cover,
@@ -307,7 +300,6 @@ class _AccountDetailViewState extends State<AccountDetailView> {
         ),
       );
     }
-    // 本地不存在，返回首字母占位符
     return AccountUiUtils.buildPlaceholder(acc.platform, color, 40, 18, 8);
   }
 
@@ -1016,6 +1008,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       danger: true,
       onConfirm: () async {
         await StorageService().deleteAccount(account.id); // 执行删除
+        await IconStore().removeAccountIcon(account.id); // 清理专属图标
         if (!mounted) return;
         widget.onDeleteSuccess();
         MessageUtil.show(context, "条目已成功删除");
