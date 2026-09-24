@@ -77,30 +77,27 @@ void main() {
     }
   });
 
-  test('指定图标后本账户命中, 同平台其他账户走平台名缓存', () async {
+  test('指定图标后仅该账户命中', () async {
     final acc = _account(id: 'a1');
     await IconStore().setAccountIcon(acc, pngA);
 
     expect(IconStore().iconFor(acc), equals(pngA));
-    expect(IconStore().iconFor(_account(id: 'a2')), equals(pngA));
+    expect(IconStore().iconFor(_account(id: 'a2')), isNull);
   });
 
-  test('解析优先级: 账户专属 > 域名缓存 > 平台名缓存', () async {
+  test('解析优先级: 账户专属 > 域名缓存', () async {
     final acc = _account(id: 'a1', url: 'https://www.example.com/login');
-    final noUrl = _account(id: 'a2');
+    final sameDomain = _account(id: 'a2', url: 'https://example.com/home');
     final otherDomain = _account(id: 'a3', url: 'https://other.com');
 
     await IconStore().putCache(IconStore.domainKey(acc.url), pngA);
     expect(IconStore().iconFor(acc), equals(pngA));
-    expect(IconStore().iconFor(noUrl), isNull); // 平台名缓存还是空的
+    expect(IconStore().iconFor(sameDomain), equals(pngA)); // 缓存按域名共享
+    expect(IconStore().iconFor(otherDomain), isNull);
 
-    await IconStore().putCache(IconStore.platformKey('GitHub'), pngB);
-    expect(IconStore().iconFor(acc), equals(pngA)); // 域名缓存优先
-    expect(IconStore().iconFor(noUrl), equals(pngB));
-    expect(IconStore().iconFor(otherDomain), equals(pngB));
-
-    await IconStore().setAccountIcon(acc, pngC);
-    expect(IconStore().iconFor(acc), equals(pngC)); // 专属图标优先
+    await IconStore().setAccountIcon(acc, pngB);
+    expect(IconStore().iconFor(acc), equals(pngB)); // 专属图标优先
+    expect(IconStore().iconFor(sameDomain), equals(pngA)); // 同域其他账户不受影响
   });
 
   test('清缓存只清共享缓存, 账户专属图标保留', () async {
@@ -114,15 +111,15 @@ void main() {
     expect(IconStore().iconFor(_account(id: 'a2')), isNull);
   });
 
-  test('删除账户后其专属图标被清理(共享缓存不受影响)', () async {
-    final acc = _account(id: 'a1');
+  test('删除账户专属图标后回落到域名缓存', () async {
+    final acc = _account(id: 'a1', url: 'https://example.com');
     await IconStore().setAccountIcon(acc, pngA);
-    await IconStore().clearCache(); // 先清掉平台名缓存便于观察
+    await IconStore().putCache(IconStore.domainKey(acc.url), pngB);
+    expect(IconStore().iconFor(acc), equals(pngA));
 
     await IconStore().removeAccountIcon(acc.id);
 
-    expect(IconStore().iconFor(acc), isNull);
-    expect(IconStore().iconFor(_account(id: 'a2')), isNull);
+    expect(IconStore().iconFor(acc), equals(pngB));
   });
 
   test('重新 load 可从数据库恢复(入库持久化)', () async {
@@ -130,7 +127,7 @@ void main() {
     await IconStore().setAccountIcon(acc, pngA);
     await IconStore().putCache(
       IconStore.domainKey('https://example.com'),
-      pngB,
+      pngC,
     );
 
     IconStore().reset();
@@ -141,20 +138,16 @@ void main() {
     expect(IconStore().iconFor(acc), equals(pngA));
     expect(
       IconStore().iconFor(_account(id: 'x', url: 'https://example.com')),
-      equals(pngB),
+      equals(pngC),
     );
   });
 
-  test('缓存键规范化', () {
+  test('域名键规范化', () {
     expect(
       IconStore.domainKey('https://www.Example.com/login'),
       'domain:example.com',
     );
     expect(IconStore.domainKey('example.com'), 'domain:example.com');
     expect(IconStore.domainKey(''), '');
-    expect(IconStore.platformKey('GitHub_2'), 'name:github');
-    expect(IconStore.platformKey('GitHub（3）'), 'name:github');
-    expect(IconStore.platformKey('微博 副本'), 'name:微博');
-    expect(IconStore.platformKey('微博'), 'name:微博');
   });
 }

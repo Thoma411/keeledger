@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-09-23 23:16:34
+ * @LastEditTime: 2026-09-24 21:00:42
  * @Description: 账户信息详情页
  */
 
@@ -1007,8 +1007,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       confirmText: "确定删除",
       danger: true,
       onConfirm: () async {
-        await StorageService().deleteAccount(account.id); // 执行删除
-        await IconStore().removeAccountIcon(account.id); // 清理专属图标
+        await StorageService().deleteAccount(account.id);
         if (!mounted) return;
         widget.onDeleteSuccess();
         MessageUtil.show(context, "条目已成功删除");

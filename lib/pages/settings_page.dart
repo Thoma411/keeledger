@@ -1,10 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-23 23:14:13
+ * @LastEditTime: 2026-09-24 23:22:19
  * @Description: 设置页
  */
 
+import 'dart:async';
 import 'dart:io';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
@@ -51,6 +52,8 @@ class SettingsPageState extends State<SettingsPage> {
   bool _bioAvailable = false; // 指纹当前是否可用
   String _bioReason = ""; // 指纹不可用原因
   String _appPath = "";
+  final _iconSourceController = TextEditingController(); // 图标源模板输入框
+  Timer? _iconSourceDebounce; // 图标源防抖落盘
 
   static const String currentVersion = "v1.4.1";
 
@@ -61,6 +64,7 @@ class SettingsPageState extends State<SettingsPage> {
     _darkMode = _settings.darkModeValue;
     _largeFont = FontScaleUtil.isLarge(_settings.fontScaleValue);
     _autoFetchIcons = _settings.get('auto_fetch_icons') == 'true';
+    _iconSourceController.text = _settings.get('icon_source_template') ?? '';
     _autoSyncEnabled = _settings.get('auto_sync_enabled') == 'true';
     _listStyle = _settings.get('list_style');
     _bioEnabled = _auth.isBiometricEnabled();
@@ -122,6 +126,28 @@ class SettingsPageState extends State<SettingsPage> {
   void _toggleAutoFetch(bool value) async {
     setState(() => _autoFetchIcons = value);
     await _settings.set('auto_fetch_icons', value.toString());
+  }
+
+  // 图标源模板
+  void _onIconSourceChanged(String value) {
+    setState(() {}); // 刷新后缀清除按钮
+    _iconSourceDebounce?.cancel();
+    _iconSourceDebounce = Timer(
+      const Duration(milliseconds: 500),
+      () => _settings.set('icon_source_template', value.trim()),
+    ); // 防抖写盘避免逐字落盘
+  }
+
+  void _clearIconSource() {
+    _iconSourceController.clear();
+    _onIconSourceChanged('');
+  }
+
+  @override
+  void dispose() {
+    _iconSourceDebounce?.cancel();
+    _iconSourceController.dispose();
+    super.dispose();
   }
 
   // 清除缓存图标
@@ -786,6 +812,40 @@ class SettingsPageState extends State<SettingsPage> {
           onChanged: _toggleAutoFetch,
           secondary: const Icon(Icons.image_search),
         ),
+        // 开启抓取后才显示的高级选项: 自定义图标源
+        if (_autoFetchIcons) ...[
+          const Divider(),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 4, 16, 12),
+            child: TextField(
+              controller: _iconSourceController,
+              maxLines: 1,
+              textInputAction: TextInputAction.done,
+              onChanged: _onIconSourceChanged,
+              decoration: InputDecoration(
+                labelText: "图标源（可选）",
+                hintText: "https://example.com/icon?domain={domain}",
+                helperText: "留空则直连站点抓取；填写后优先从此地址取图标（会向其暴露站点域名，请只填可信来源）",
+                helperMaxLines: 3,
+                isDense: true,
+                border: const OutlineInputBorder(),
+                suffixIconConstraints: const BoxConstraints(maxHeight: 32),
+                suffixIcon: _iconSourceController.text.isEmpty
+                    ? null
+                    : IconButton(
+                        icon: const Icon(Icons.close_rounded, size: 18),
+                        padding: EdgeInsets.zero,
+                        constraints: const BoxConstraints(),
+                        style: IconButton.styleFrom(
+                          minimumSize: const Size(28, 28),
+                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                        ),
+                        onPressed: _clearIconSource,
+                      ),
+              ),
+            ),
+          ),
+        ],
         const Divider(),
         ListTile(
           title: const Text("清除图标缓存"),
@@ -895,8 +955,8 @@ class SettingsPageState extends State<SettingsPage> {
                 ? _toggleBiometric
                 : null,
           ),
+          const Divider(),
         ],
-        const Divider(),
         ListTile(
           title: const Text("查看恢复密钥"),
           subtitle: const Text("主密码遗失时，凭此密钥可重置密码并找回数据"),

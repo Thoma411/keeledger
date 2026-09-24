@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-23 22:36:44
- * @LastEditTime: 2026-09-23 23:23:37
+ * @LastEditTime: 2026-09-24 21:16:07
  * @Description: 图标解码与缩放
  */
 
@@ -13,7 +13,7 @@ class IconCodec {
 
   static const int maxSize = 256; // 图标边长上限
 
-  // 超过上限才等比缩到上限并转PNG; 未超过则原样返回(保留原始格式与质量)
+  // 超过上限才压缩转PNG
   static Future<Uint8List> normalize(Uint8List raw) async {
     final ui.Codec codec = await ui.instantiateImageCodec(raw);
     final ui.FrameInfo frame = await codec.getNextFrame();

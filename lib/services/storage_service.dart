@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-23 23:15:25
+ * @LastEditTime: 2026-09-24 23:27:08
  * @Description: 与SQLite交互的方法
  */
 
@@ -171,7 +171,10 @@ class StorageService {
     await _incrementRevision();
   }
 
-  // 仅更新账户密文字段(用于v1→v2密文格式迁移, 不触发修订号避免同步噪声)
+  // 非账户主体数据(如用户指定的图标)变更后更新修订号
+  Future<void> bumpRevision() => _incrementRevision();
+
+  // 仅更新账户密文字段(用于v1->v2密文格式迁移, 不触发修订号避免同步噪声)
   Future<void> updateAccountCipher(Account account) async {
     final db = await database;
     final map = account.toMap(); // toMap会用当前DK以v2格式重新加密

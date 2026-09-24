@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-04-08 17:43:09
- * @LastEditTime: 2026-09-20 22:43:20
+ * @LastEditTime: 2026-09-24 23:28:42
  * @Description: 设置
  */
 
@@ -35,6 +35,7 @@ class SettingsService {
     'sort_by', // 排序依据(平台/修改时间)
     'sort_ascending', // 排序方向(升序/降序)
     'auto_fetch_icons', // 自动抓取图标
+    'icon_source_template', // 自定义图标源模板(含{domain})
     'force_desktop_mode', // 桌面模式
     'bio_enabled', // 指纹解锁开关
     'bio_edk', // 指纹封装的DK信封
