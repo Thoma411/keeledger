@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-24 23:22:19
+ * @LastEditTime: 2026-09-28 23:32:39
  * @Description: 设置页
  */
 
@@ -753,14 +753,12 @@ class SettingsPageState extends State<SettingsPage> {
             ],
           ),
         ),
-        const Divider(),
         SwitchListTile(
           title: const Text("大号字体"),
           secondary: const Icon(Icons.format_size),
           value: _largeFont,
           onChanged: _toggleLargeFont,
         ),
-        const Divider(),
         ListTile(
           title: const Text("列表样式"),
           leading: const Icon(Icons.view_list_outlined),
@@ -781,7 +779,6 @@ class SettingsPageState extends State<SettingsPage> {
             ],
           ),
         ),
-        const Divider(),
         ListTile(
           title: const Text("应用路径"),
           subtitle: _pathText(_appPath, "正在载入路径..."),
@@ -791,7 +788,6 @@ class SettingsPageState extends State<SettingsPage> {
               ? () => _copyPath(_appPath)
               : null,
         ),
-        const Divider(),
         SwitchListTile(
           title: const Text("桌面模式"),
           subtitle: const Text("以电脑端宽屏布局展示 UI（仅平板有效）"),
@@ -804,10 +800,9 @@ class SettingsPageState extends State<SettingsPage> {
                 }
               : null,
         ),
-        const Divider(),
         SwitchListTile(
           title: const Text("自动抓取图标"),
-          subtitle: const Text("根据网址自动获取平台 Logo（需联网）"),
+          subtitle: const Text("需填入有效网址"),
           value: _autoFetchIcons,
           onChanged: _toggleAutoFetch,
           secondary: const Icon(Icons.image_search),
@@ -825,7 +820,7 @@ class SettingsPageState extends State<SettingsPage> {
               decoration: InputDecoration(
                 labelText: "图标源（可选）",
                 hintText: "https://example.com/icon?domain={domain}",
-                helperText: "留空则直连站点抓取；填写后优先从此地址取图标（会向其暴露站点域名，请只填可信来源）",
+                helperText: "优先从此地址抓取图标（会发送网址列表，请确保来源可信）",
                 helperMaxLines: 3,
                 isDense: true,
                 border: const OutlineInputBorder(),
@@ -846,10 +841,8 @@ class SettingsPageState extends State<SettingsPage> {
             ),
           ),
         ],
-        const Divider(),
         ListTile(
           title: const Text("清除图标缓存"),
-          subtitle: const Text("删除自动抓取的图标缓存（手动指定的图标除外）"),
           leading: const Icon(Icons.delete_sweep_outlined),
           onTap: _handleClearIcons,
         ),
@@ -870,10 +863,9 @@ class SettingsPageState extends State<SettingsPage> {
           enabled: _hasDb,
           onTap: _hasDb ? _showWebDavDialog : null,
         ),
-        const Divider(),
         SwitchListTile(
           title: const Text("静默同步"),
-          subtitle: const Text("开启后，应用将会在登录和退出时自动执行同步"),
+          subtitle: const Text("开启后，应用将在登录和退出时自动执行同步"),
           secondary: const Icon(Icons.sync_rounded),
           value: _autoSyncEnabled,
           onChanged: _hasDb
@@ -883,7 +875,6 @@ class SettingsPageState extends State<SettingsPage> {
                 }
               : null,
         ),
-        const Divider(),
         ListTile(
           title: const Text("从 CSV 导入账户"),
           subtitle: const Text("按表头字段名匹配导入，兼容旧版导出文件"),
@@ -925,7 +916,6 @@ class SettingsPageState extends State<SettingsPage> {
             }
           },
         ),
-        const Divider(),
         ListTile(
           title: const Text("导出为 CSV"),
           subtitle: const Text("将所有账户信息以明文形式导出"),
@@ -955,27 +945,21 @@ class SettingsPageState extends State<SettingsPage> {
                 ? _toggleBiometric
                 : null,
           ),
-          const Divider(),
         ],
         ListTile(
           title: const Text("查看恢复密钥"),
-          subtitle: const Text("主密码遗失时，凭此密钥可重置密码并找回数据"),
           leading: const Icon(Icons.key_outlined),
           enabled: _hasDb, // 仅在有库时可用
           onTap: _showViewRKDialog,
         ),
-        const Divider(),
         ListTile(
           title: const Text("重置恢复密钥"),
-          subtitle: const Text("丢弃旧密钥并生成全新的恢复凭据"),
           leading: const Icon(Icons.refresh_outlined),
           enabled: _hasDb, // 仅在有库时可用
           onTap: _handleManualRotateRK,
         ),
-        const Divider(),
         ListTile(
           title: const Text("修改主密码"),
-          subtitle: const Text("更换登入应用时使用的密码"),
           leading: const Icon(Icons.password_outlined),
           enabled: _hasDb,
           onTap: _showChangePasswordDialog,
@@ -995,7 +979,6 @@ class SettingsPageState extends State<SettingsPage> {
           leading: const Icon(Icons.update_rounded),
           onTap: _checkForUpdates,
         ),
-        const Divider(),
         ListTile(
           title: const Text("帮助"),
           subtitle: const Text("查看使用说明与常见问题"),
@@ -1006,7 +989,6 @@ class SettingsPageState extends State<SettingsPage> {
             ).push(MaterialPageRoute(builder: (context) => const HelpPage()));
           },
         ),
-        const Divider(),
         ListTile(
           title: const Text("反馈与建议"),
           subtitle: const Text("参与讨论、提交建议或反馈问题"),
@@ -1020,7 +1002,6 @@ class SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-        const Divider(),
         ListTile(
           title: const Text("开源许可"),
           subtitle: const Text("第三方开放源代码许可与版权声明"),
@@ -1033,7 +1014,6 @@ class SettingsPageState extends State<SettingsPage> {
             );
           },
         ),
-        const Divider(),
         ListTile(
           title: Text("关于项目"),
           subtitle: Text("Keeledger $currentVersion"),
