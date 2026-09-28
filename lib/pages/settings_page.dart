@@ -713,6 +713,22 @@ class SettingsPageState extends State<SettingsPage> {
     );
   }
 
+  // 分组标题(贴边样式下补 16 缩进, 与条目内容对齐)
+  Widget _sectionTitle(String title, {bool indent = false}) {
+    final Widget text = Text(
+      title,
+      style: const TextStyle(
+        fontSize: AppText.section,
+        fontWeight: FontWeight.bold,
+      ),
+    );
+    if (!indent) return text;
+    return Padding(
+      padding: const EdgeInsets.symmetric(horizontal: 16),
+      child: text,
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final bool isLoggedIn = _hasDb && SecurityService().currentDataKey != null;
@@ -725,15 +741,12 @@ class SettingsPageState extends State<SettingsPage> {
     final bool showAsEnabled = isDesktopDevice || forceDesktopSetting;
 
     return ListView(
-      padding: const EdgeInsets.all(24),
+      // 触屏端贴边(水平由各条目的 contentPadding 决定, 与系统设置页一致); 电脑端保持原样
+      padding: isDesktopDevice
+          ? const EdgeInsets.all(24)
+          : const EdgeInsets.symmetric(vertical: 24),
       children: [
-        const Text(
-          "通用",
-          style: TextStyle(
-            fontSize: AppText.section,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _sectionTitle("通用", indent: !isDesktopDevice),
         const SizedBox(height: 10),
         ListTile(
           title: const Text("外观"),
@@ -848,13 +861,7 @@ class SettingsPageState extends State<SettingsPage> {
         ),
         const Divider(),
 
-        const Text(
-          "数据管理",
-          style: TextStyle(
-            fontSize: AppText.section,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _sectionTitle("数据管理", indent: !isDesktopDevice),
         const SizedBox(height: 10),
         ListTile(
           title: const Text("云端 WebDAV 配置"),
@@ -925,13 +932,7 @@ class SettingsPageState extends State<SettingsPage> {
         ),
         const Divider(),
 
-        const Text(
-          "安全",
-          style: TextStyle(
-            fontSize: AppText.section,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _sectionTitle("安全", indent: !isDesktopDevice),
         const SizedBox(height: 10),
         // 指纹解锁: 仅移动端展示; 设备不支持时置灰并说明原因
         if (Platform.isAndroid) ...[
@@ -966,13 +967,7 @@ class SettingsPageState extends State<SettingsPage> {
         ),
         const Divider(),
 
-        const Text(
-          "其他",
-          style: TextStyle(
-            fontSize: AppText.section,
-            fontWeight: FontWeight.bold,
-          ),
-        ),
+        _sectionTitle("其他", indent: !isDesktopDevice),
         const SizedBox(height: 10),
         ListTile(
           title: const Text("检查更新"),
