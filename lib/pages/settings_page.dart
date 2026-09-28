@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-09-28 23:32:39
+ * @LastEditTime: 2026-09-29 00:10:47
  * @Description: 设置页
  */
 
@@ -1026,7 +1026,7 @@ class SettingsPageState extends State<SettingsPage> {
         const SizedBox(height: 20),
         Center(
           child: SizedBox(
-            width: 350,
+            width: 300,
             height: 50,
             child: OutlinedButton.icon(
               onPressed: isLoggedIn ? _handleLogout : null,
