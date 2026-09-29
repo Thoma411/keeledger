@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-24 00:03:15
- * @LastEditTime: 2026-09-24 21:19:35
+ * @LastEditTime: 2026-09-29 19:46:27
  * @Description: 图标抓取测试
  */
 
@@ -63,7 +63,18 @@ void main() {
       [
         'https://example.com/assets/icons/512.png',
         'https://example.com/icons/64.png',
+        'https://example.com/assets/64.png', // 根绝对路径的"同目录"变体
       ],
+    );
+  });
+
+  test('相对路径按文档最终地址解析(如 301 到 /index/)', () {
+    expect(
+      IconService.parseHtmlIcons(
+        '<link rel="shortcut icon" href="images/favicon.ico" type="image/x-icon">',
+        Uri.parse('https://www.12306.cn/index/'),
+      ),
+      ['https://www.12306.cn/index/images/favicon.ico'],
     );
   });
 

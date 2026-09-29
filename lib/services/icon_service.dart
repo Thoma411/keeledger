@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-15 16:34:15
- * @LastEditTime: 2026-09-24 23:26:02
+ * @LastEditTime: 2026-09-29 23:27:33
  * @Description: 抓取网页icon并写入图标仓库
  */
 
@@ -49,14 +49,16 @@ class IconService {
 
       final List<({String url, String source})> candidates = [
         if (customUrl != null) (url: customUrl, source: "自定义源"),
-        ...await _siteCandidates(host),
+        ...await _siteCandidates(_rawHost(rawUrl), host),
       ];
       for (final c in candidates) {
         final Uint8List? bytes = await _downloadIcon(c.url);
         if (bytes == null) continue;
         try {
           await IconStore().putCache(key, bytes);
-          debugPrint("IconService: $host 命中(${c.source}) ${c.url}");
+          debugPrint(
+            "IconService: $host 命中(${c.source}) ${c.url} ${bytes.length}B",
+          );
           return true;
         } catch (e) {
           debugPrint("IconService: ${c.url} 不是可用图片: $e");
@@ -78,36 +80,72 @@ class IconService {
     return t.replaceAll('{domain}', host);
   }
 
-  // 直连站点候选
+  // 用户填写的原始主机名
+  static String _rawHost(String rawUrl) {
+    try {
+      final String url = rawUrl.trim().toLowerCase();
+      return Uri.parse(url.startsWith('http') ? url : 'http://$url').host;
+    } catch (_) {
+      return '';
+    }
+  }
+
+  // 直连站点候选: 原始主机名优先
   Future<List<({String url, String source})>> _siteCandidates(
+    String rawHost,
     String host,
   ) async {
-    final List<({String url, String source})> result = [];
-    final String? html = await _downloadText('https://$host/');
-    if (html != null) {
-      final Uri base = Uri.parse('https://$host/');
-      result.addAll(
-        parseHtmlIcons(html, base).map((u) => (url: u, source: "网页声明")),
+    final List<({String url, String source})> fallbacks = [];
+    final List<String> hosts = [
+      rawHost,
+      host,
+    ].where((h) => h.isNotEmpty).toSet().toList();
+
+    for (final String h in hosts) {
+      final List<({String url, String source})> found = await _hostCandidates(
+        h,
       );
-      final String? manifestUrl = parseManifestUrl(html, base);
-      if (manifestUrl != null) {
-        final String? json = await _downloadText(manifestUrl);
-        if (json != null) {
-          result.addAll(
-            parseManifestIcons(
-              json,
-              Uri.parse(manifestUrl),
-            ).map((u) => (url: u, source: "manifest")),
-          );
-        }
+      if (found.isNotEmpty) return found; // 首页读到就直接用此主机名
+      fallbacks.addAll(_fallbackPaths(h));
+    }
+    return fallbacks;
+  }
+
+  // 单个主机名: 首页声明的图标+manifest(读不到首页则返回空)
+  Future<List<({String url, String source})>> _hostCandidates(
+    String host,
+  ) async {
+    final page = await _downloadPage('https://$host/');
+    if (page == null) {
+      debugPrint("IconService: $host 首页读取失败, 尝试约定路径");
+      return const [];
+    }
+    final List<({String url, String source})> result = [];
+    final Uri base = page.uri; // 重定向后的最终地址(相对路径按它解析)
+    final List<String> declared = parseHtmlIcons(page.text, base);
+    debugPrint("IconService: $base 声明图标 ${declared.length} 个");
+    result.addAll(declared.map((u) => (url: u, source: "网页声明")));
+    final String? manifestUrl = parseManifestUrl(page.text, base);
+    if (manifestUrl != null) {
+      final manifest = await _downloadPage(manifestUrl);
+      if (manifest != null) {
+        result.addAll(
+          parseManifestIcons(
+            manifest.text,
+            manifest.uri,
+          ).map((u) => (url: u, source: "manifest")),
+        );
       }
     }
-    result.addAll([
-      (url: "https://$host/apple-touch-icon.png", source: "约定路径"),
-      (url: "https://$host/favicon.ico", source: "约定路径"),
-    ]);
+    result.addAll(_fallbackPaths(host));
     return result;
   }
+
+  // 约定路径
+  List<({String url, String source})> _fallbackPaths(String host) => [
+    (url: "https://$host/apple-touch-icon.png", source: "约定路径"),
+    (url: "https://$host/favicon.ico", source: "约定路径"),
+  ];
 
   // 解析图标声明
   @visibleForTesting
@@ -165,7 +203,7 @@ class IconService {
         if (src is! String || src.isEmpty) continue;
         links.add((href: src, px: _sizeToPx('${item['sizes'] ?? ''}')));
       }
-      return _resolveAll(_bySizeDesc(links), base);
+      return _resolveAll(_bySizeDesc(links), base, sibling: true);
     } catch (e) {
       debugPrint("IconService: manifest 解析失败: $e");
       return const [];
@@ -181,17 +219,32 @@ class IconService {
   // 转绝对路径并去重
   static List<String> _resolveAll(
     List<({String href, int px})> links,
-    Uri base,
-  ) {
+    Uri base, {
+    bool sibling = false,
+  }) {
     final List<String> out = [];
+    final List<String> variants = [];
     for (final link in links) {
-      if (link.href.toLowerCase().endsWith('.svg')) continue; // 跳过矢量图
-      final String url = link.href.startsWith('data:')
-          ? link.href
-          : base.resolve(link.href).toString();
-      if (!out.contains(url)) out.add(url);
+      final String url = _abs(link.href, base);
+      if (url.isNotEmpty && !out.contains(url)) out.add(url);
+      if (!sibling || !link.href.startsWith('/')) continue;
+      final String name = Uri.parse(link.href).pathSegments.last;
+      final String alt = _abs(name, base);
+      if (alt.isNotEmpty && !out.contains(alt) && !variants.contains(alt)) {
+        variants.add(alt);
+      }
     }
+    out.addAll(variants);
     return out;
+  }
+
+  // 转绝对路径
+  static String _abs(String href, Uri base) {
+    if (href.toLowerCase().endsWith('.svg')) {
+      debugPrint("IconService: 跳过SVG声明 $href");
+      return '';
+    }
+    return href.startsWith('data:') ? href : base.resolve(href).toString();
   }
 
   // 取标签属性
@@ -225,10 +278,25 @@ class IconService {
       }
     }
     final http.Response? res = await _get(url);
-    if (res == null || res.statusCode != 200) return null;
+    if (res == null) return null; // 请求异常已由_get记录
+    if (res.statusCode != 200) {
+      debugPrint("IconService: $url HTTP ${res.statusCode}");
+      return null;
+    }
     final Uint8List bytes = res.bodyBytes;
-    if (bytes.length < 60) return null;
-    if (bytes[0] == 0x3C) return null; // '<': 200 的 HTML 错误页
+    if (bytes.length < 60) {
+      debugPrint("IconService: $url 内容过小(${bytes.length}B)");
+      return null;
+    }
+    if (bytes[0] == 0x3C) {
+      final String type = (res.headers['content-type'] ?? '').toLowerCase();
+      debugPrint(
+        type.contains('svg')
+            ? "IconService: $url 是SVG"
+            : "IconService: $url 返回HTML而非图片",
+      );
+      return null;
+    }
     return bytes;
   }
 
@@ -243,20 +311,39 @@ class IconService {
     }
   }
 
-  // 读取文本
-  Future<String?> _downloadText(String url) async {
+  // 读取文本并跟随重定向(最终URL作为相对路径的基准)
+  Future<({String text, Uri uri})?> _downloadPage(String url) async {
     final client = http.Client();
     try {
-      final request = http.Request('GET', Uri.parse(url))
-        ..headers['User-Agent'] = _userAgent;
-      final response = await client.send(request).timeout(_timeout);
-      if (response.statusCode != 200) return null;
-      final builder = BytesBuilder();
-      await for (final chunk in response.stream.timeout(_timeout)) {
-        builder.add(chunk);
-        if (builder.length >= _maxHtmlBytes) break;
+      Uri current = Uri.parse(url);
+      for (int hop = 0; hop < 5; hop++) {
+        final request = http.Request('GET', current)
+          ..followRedirects = false
+          ..headers['User-Agent'] = _userAgent;
+        final response = await client.send(request).timeout(_timeout);
+        final String? location = response.headers['location'];
+        if (response.isRedirect && location != null) {
+          current = current.resolve(location);
+          debugPrint("IconService: 重定向 -> $current");
+          continue;
+        }
+        if (response.statusCode != 200) {
+          debugPrint("IconService: $current HTTP ${response.statusCode}");
+          return null;
+        }
+        final builder = BytesBuilder();
+        await for (final chunk in response.stream.timeout(_timeout)) {
+          builder.add(chunk);
+          if (builder.length >= _maxHtmlBytes) break;
+        }
+        debugPrint("IconService: $current 读取 ${builder.length}B");
+        return (
+          text: utf8.decode(builder.takeBytes(), allowMalformed: true),
+          uri: current,
+        );
       }
-      return utf8.decode(builder.takeBytes(), allowMalformed: true);
+      debugPrint("IconService: $url 重定向次数过多");
+      return null;
     } catch (e) {
       debugPrint("IconService: 读取失败 $url: $e");
       return null;
