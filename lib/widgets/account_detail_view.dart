@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-09-24 21:00:42
+ * @LastEditTime: 2026-10-04 21:08:51
  * @Description: 账户信息详情页
  */
 
@@ -16,6 +16,7 @@ import '../services/icon_store.dart';
 import '../services/storage_service.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
+import 'account_form_fields.dart';
 import 'account_ui_utils.dart';
 import 'app_dialogs.dart';
 
@@ -179,7 +180,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       fontSize: AppText.display,
                       fontWeight: FontWeight.bold,
                     ),
-                    decoration: _fieldDecoration(hint: "平台名称"),
+                    decoration: accountFieldDecoration(context, hint: "平台名称"),
                   ),
                   const SizedBox(height: 4),
                   // 状态变下拉框
@@ -331,46 +332,9 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     );
   }
 
-  // 输入框装饰
-  InputDecoration _fieldDecoration({
-    String? hint,
-    Widget? suffixIcon,
-    bool readOnly = false,
-  }) {
-    return InputDecoration(
-      isDense: true,
-      contentPadding: const EdgeInsets.symmetric(vertical: 8),
-      border: InputBorder.none,
-      focusedBorder: UnderlineInputBorder(
-        borderSide: BorderSide(
-          color: Theme.of(context).colorScheme.primary,
-          width: 1,
-        ),
-      ),
-      hintText: hint,
-      suffixIcon: suffixIcon,
-      // 限制图标栏尺寸
-      suffixIconConstraints: const BoxConstraints(
-        minWidth: 32,
-        minHeight: 32,
-        maxHeight: 32,
-      ),
-      filled: !readOnly, // 只读态不铺底色
-    );
-  }
-
   // 只读态值渲染: 与输入框共用装饰
-  Widget _readOnlyValue(String text, {TextStyle? style, int? maxLines}) {
-    return InputDecorator(
-      decoration: _fieldDecoration(readOnly: true),
-      child: Text(
-        text,
-        style: style,
-        maxLines: maxLines,
-        overflow: maxLines == null ? null : TextOverflow.ellipsis,
-      ),
-    );
-  }
+  Widget _readOnlyValue(String text, {TextStyle? style, int? maxLines}) =>
+      readOnlyFieldValue(context, text, style: style, maxLines: maxLines);
 
   // 构建可编辑信息展示行
   Widget _buildEditableInfoRow(
@@ -380,67 +344,13 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
   }) {
-    final bool isMultiline = maxLines > 1; // 多行字段(如备注)
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            label,
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: AppText.caption,
-            ),
-          ),
-          const SizedBox(height: 4),
-          if (!_isEditing) // 只读状态
-            _readOnlyValue(
-              controller.text.isEmpty ? "-" : controller.text,
-              style: const TextStyle(
-                fontSize: AppText.body,
-                fontWeight: FontWeight.w500,
-              ),
-              maxLines: isMultiline ? null : 1,
-            )
-          else
-            TextFormField(
-              controller: controller,
-              maxLines: maxLines,
-              // 行数随内容增长: 不足 maxLines 按实际行数显示, 超出则框内滚动
-              minLines: isMultiline ? 1 : null,
-              inputFormatters: isDateField
-                  ? [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
-                      LengthLimitingTextInputFormatter(10),
-                    ]
-                  : inputFormatters,
-              style: const TextStyle(
-                fontSize: AppText.body,
-                fontWeight: FontWeight.w500,
-              ),
-              decoration: _fieldDecoration(
-                suffixIcon: isDateField
-                    ? IconButton(
-                        icon: Icon(
-                          Icons.calendar_today,
-                          size: 16,
-                          color: Theme.of(context).colorScheme.primary,
-                        ),
-                        onPressed: () => _pickDate(context, controller),
-                        padding: EdgeInsets.zero,
-                        // 收缩图标尺寸/点击区, 否则图标会把该行撑高(比其他输入框高一截)
-                        style: IconButton.styleFrom(
-                          minimumSize: const Size(32, 32),
-                          padding: EdgeInsets.zero,
-                          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                        ),
-                      )
-                    : null,
-              ),
-            ),
-        ],
-      ),
+    return AccountFieldRow(
+      label: label,
+      controller: controller,
+      isEditing: _isEditing,
+      isDateField: isDateField,
+      maxLines: maxLines,
+      inputFormatters: inputFormatters,
     );
   }
 
@@ -477,82 +387,6 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     );
   }
 
-  // 构建密码切换行
-  Widget _buildEditablePasswordRow(Account acc) {
-    bool isVisible = _isPasswordVisible;
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8.0),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            "密码",
-            style: TextStyle(
-              color: Theme.of(context).colorScheme.onSurfaceVariant,
-              fontSize: AppText.caption,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: _isEditing
-                    ? TextFormField(
-                        controller: _pswdController,
-                        // 当眼睛闭着时，输入框也应该是遮蔽状态
-                        obscureText: !isVisible,
-                        style: const TextStyle(
-                          fontSize: AppText.body,
-                          fontFamily: 'Consolas',
-                        ),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      )
-                    : Text(
-                        isVisible ? _pswdController.text : "••••••••",
-                        style: const TextStyle(
-                          fontSize: AppText.body,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Consolas',
-                        ),
-                      ),
-              ),
-              // 眼睛图标无论是否处于编辑模式都应允许切换可见性
-              IconButton(
-                icon: Icon(
-                  isVisible ? Icons.visibility : Icons.visibility_off,
-                  size: 18,
-                ),
-                onPressed: () {
-                  setState(() {
-                    _isPasswordVisible = !_isPasswordVisible;
-                  });
-                },
-              ),
-              // 根据_isEditing状态切换组件
-              if (!_isEditing) // 复制按钮仅在非编辑模式下显示
-                IconButton(
-                  icon: Icon(
-                    Icons.copy_all_rounded,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(
-                      ClipboardData(text: _pswdController.text),
-                    );
-                    MessageUtil.show(context, "密码已复制");
-                  },
-                ),
-            ],
-          ),
-        ],
-      ),
-    );
-  }
-
   // 构建可编辑url展示行
   Widget _buildEditableUrlRow() {
     return _isEditing
@@ -575,167 +409,24 @@ class _AccountDetailViewState extends State<AccountDetailView> {
 
   // 构建可编辑标签行
   Widget _buildEditableTagsRow() {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          "标签 (回车切分)",
-          style: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: AppText.caption,
-          ),
-        ),
-        const SizedBox(height: 8),
-        // 标签展示与输入区
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: _isEditing
-                ? Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.05)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: _isEditing
-                ? Border.all(
-                    color: Theme.of(
-                      context,
-                    ).colorScheme.primary.withValues(alpha: 0.3),
-                  )
-                : null,
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              // 已有的标签Chip
-              ..._tempTags.map(
-                (tag) => InputChip(
-                  label: Text(
-                    tag,
-                    style: const TextStyle(fontSize: AppText.label),
-                  ),
-                  shape: const StadiumBorder(),
-                  onDeleted: _isEditing
-                      ? () => setState(() => _tempTags.remove(tag))
-                      : null,
-                  onPressed: !_isEditing
-                      ? () {
-                          widget.onTagClicked?.call(tag); // 只读模式下点击标签直接搜索
-                        }
-                      : null,
-                  deleteIcon: const Icon(Icons.cancel, size: 14),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              // 编辑模式下的实时输入框
-              if (_isEditing)
-                SizedBox(
-                  width: 100,
-                  child: TextField(
-                    controller: _tagsController,
-                    autofocus: false,
-                    decoration: const InputDecoration(
-                      hintText: "新标签...",
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 4),
-                    ),
-                    style: const TextStyle(fontSize: AppText.sub),
-                    // 回车或输入逗号/空格时触发切分
-                    onSubmitted: (val) => _addNewTag(val),
-                    onChanged: (val) {
-                      // 这里可以实现即时的下拉建议 UI
-                    },
-                  ),
-                ),
-            ],
-          ),
-        ),
-        // 编辑模式下的智能建议区
-        if (_isEditing && _tagsController.text.isNotEmpty)
-          _buildTagSuggestions(),
-      ],
-    );
-  }
-
-  // 显示标签智能建议
-  Widget _buildTagSuggestions() {
-    final suggestions = widget.globalTags
-        .where(
-          (t) =>
-              t.toLowerCase().contains(_tagsController.text.toLowerCase()) &&
-              !_tempTags.contains(t),
-        )
-        .toList();
-    if (suggestions.isEmpty) return const SizedBox.shrink();
-
-    return Padding(
-      padding: const EdgeInsets.only(top: 8),
-      child: Wrap(
-        spacing: 8,
-        children: suggestions
-            .take(5)
-            .map(
-              (s) => ActionChip(
-                label: Text(
-                  s,
-                  style: TextStyle(
-                    fontSize: AppText.label,
-                    color: Theme.of(context).colorScheme.primary,
-                  ),
-                ),
-                onPressed: () => _addNewTag(s),
-                backgroundColor: Theme.of(
-                  context,
-                ).colorScheme.primary.withValues(alpha: 0.05),
-              ),
-            )
-            .toList(),
-      ),
+    return AccountTagsRow(
+      tags: _tempTags,
+      controller: _tagsController,
+      isEditing: _isEditing,
+      globalTags: widget.globalTags,
+      onChanged: (list) => setState(() => _tempTags = list),
+      onTagClicked: widget.onTagClicked,
     );
   }
 
   // 添加新标签并查重
-  void _addNewTag(String val, {int maxChars = 8}) {
-    final cleanTag = val.trim();
-    if (cleanTag.length > maxChars) {
-      MessageUtil.show(context, "标签长度不能超过 $maxChars 个字");
-      return;
-    }
-    if (cleanTag.isNotEmpty && !_tempTags.contains(cleanTag)) {
-      setState(() {
-        _tempTags.add(cleanTag);
-        _tagsController.clear();
-      });
-    }
-  }
-
-  // 日历选择器
-  Future<void> _pickDate(
-    BuildContext context,
-    TextEditingController controller,
-  ) async {
-    // 日历初始的选中日期
-    DateTime initialDate = DateTime.tryParse(controller.text) ?? DateTime.now();
-    // 调用官方日期选择器
-    final DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: initialDate,
-      firstDate: DateTime(1900), // 最早可选
-      lastDate: DateTime(2100), // 最晚可选
-      helpText: '选择日期',
-      cancelText: '取消',
-      confirmText: '确定',
-    );
-    // 如果用户选了日期且组件还挂载着
-    if (picked != null && mounted) {
-      setState(() {
-        // 格式化为yyyy-MM-dd
-        controller.text =
-            "${picked.year}-${picked.month.toString().padLeft(2, '0')}-${picked.day.toString().padLeft(2, '0')}";
-      });
-    }
+  void _addNewTag(String val) {
+    final List<String>? next = appendTag(context, _tempTags, val);
+    if (next == null) return;
+    setState(() {
+      _tempTags = next;
+      _tagsController.clear();
+    });
   }
 
   // 切换状态(只读/编辑)
@@ -1105,7 +796,14 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                         LengthLimitingTextInputFormatter(11),
                       ],
                     ),
-                    _buildEditablePasswordRow(widget.account), // 密码行
+                    AccountPasswordRow(
+                      controller: _pswdController,
+                      isEditing: _isEditing,
+                      isVisible: _isPasswordVisible,
+                      onToggleVisible: () => setState(
+                        () => _isPasswordVisible = !_isPasswordVisible,
+                      ),
+                    ),
                     const Divider(),
                     // 分组2: 平台与标记
                     _buildEditableUrlRow(), // 网址展示/编辑
@@ -1158,7 +856,14 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       LengthLimitingTextInputFormatter(11),
                     ],
                   ),
-                  _buildEditablePasswordRow(widget.account), // 密码行
+                  AccountPasswordRow(
+                    controller: _pswdController,
+                    isEditing: _isEditing,
+                    isVisible: _isPasswordVisible,
+                    onToggleVisible: () => setState(
+                      () => _isPasswordVisible = !_isPasswordVisible,
+                    ),
+                  ),
                   const Divider(),
                   // 分组2: 平台与标记
                   _buildEditableUrlRow(), // 网址展示/编辑
