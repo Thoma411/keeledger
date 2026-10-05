@@ -1,132 +1,141 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-30 22:24:38
- * @LastEditTime: 2026-08-30 22:29:17
+ * @LastEditTime: 2026-10-05 19:20:53
  * @Description: 新增账户表单对话框
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/account.dart';
 import '../services/storage_service.dart';
+import '../utils/utils.dart';
+import 'account_form_fields.dart';
 import 'app_dialogs.dart';
 
-// 弹出"新增账户"表单对话框
-Future<bool?> showNewAccountDialog(BuildContext context) {
+// 弹出"新增账户"对话框
+Future<bool?> showNewAccountDialog(
+  BuildContext context, {
+  required Set<String> globalTags,
+}) {
   return showDialog<bool>(
     context: context,
-    builder: (context) => const AddAccountDialog(),
+    // 两页向导中途点外部关闭会静默丢数据
+    barrierDismissible: false,
+    builder: (context) => AddAccountDialog(globalTags: globalTags),
   );
 }
 
 class AddAccountDialog extends StatefulWidget {
-  const AddAccountDialog({super.key});
+  final Set<String> globalTags; // 标签补全来源
+
+  const AddAccountDialog({super.key, required this.globalTags});
 
   @override
   State<AddAccountDialog> createState() => _AddAccountDialogState();
 }
 
 class _AddAccountDialogState extends State<AddAccountDialog> {
-  final _formKey = GlobalKey<FormState>();
-
-  // 表单输入值
-  String platform = '',
-      url = '',
-      name = '',
-      userId = '',
-      email = '',
-      pswd = '',
-      phone = '',
-      notes = '',
-      tagsStr = '';
-  int status = 1; // 默认使用中
-  bool realName = false;
-
+  // 第1页: 必填
+  final _platformController = TextEditingController();
+  final _nameController = TextEditingController();
+  final _userIdController = TextEditingController();
+  final _pswdController = TextEditingController();
+  final _emailController = TextEditingController();
+  final _phoneController = TextEditingController();
+  // 第2页: 选填
+  final _urlController = TextEditingController();
+  final _tagsController = TextEditingController();
   final _birthController = TextEditingController();
   final _signupController = TextEditingController();
+  final _notesController = TextEditingController();
 
-  bool _isExpanded = false; // 默认折叠
-  static const double _gap = 6; // 字段间距
+  int _step = 0; // 0=必填页, 1=选填页
+  int _status = 1; // 默认使用中
+  bool _realName = false;
+  bool _passwordVisible = false;
+  List<String> _tags = [];
+
+  @override
+  void initState() {
+    super.initState();
+    // 标签输入时刷新补全建议
+    _tagsController.addListener(() {
+      if (mounted) setState(() {});
+    });
+  }
 
   @override
   void dispose() {
+    _platformController.dispose();
+    _nameController.dispose();
+    _userIdController.dispose();
+    _pswdController.dispose();
+    _emailController.dispose();
+    _phoneController.dispose();
+    _urlController.dispose();
+    _tagsController.dispose();
     _birthController.dispose();
     _signupController.dispose();
+    _notesController.dispose();
     super.dispose();
   }
 
-  // 日期选择器
-  Future<void> _pickDate(TextEditingController controller) async {
-    final date = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(1900),
-      lastDate: DateTime(2100),
-    );
-    if (date != null) {
-      controller.text = DateFormat('yyyy-MM-dd').format(date);
+  // 第1页校验: 平台名必填 + 至少一项关键信息 + 平台名查重
+  Future<String?> _validateStep1() async {
+    final String platform = _platformController.text.trim();
+    if (platform.isEmpty) return "请填写平台名称";
+    final bool hasAnyCredential =
+        _nameController.text.trim().isNotEmpty ||
+        _userIdController.text.trim().isNotEmpty ||
+        _pswdController.text.trim().isNotEmpty ||
+        _emailController.text.trim().isNotEmpty ||
+        _phoneController.text.trim().isNotEmpty;
+    if (!hasAnyCredential) {
+      return "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]";
     }
+    if (await StorageService().isPlatformNameExists(platform)) {
+      return "平台 '$platform' 已存在，请更换名称";
+    }
+    return null;
+  }
+
+  // 下一步(校验不过留在本页)
+  Future<void> _next() async {
+    final String? error = await _validateStep1();
+    if (!mounted) return;
+    if (error != null) {
+      MessageUtil.show(context, error, isError: true);
+      return;
+    }
+    setState(() => _step = 1);
   }
 
   // 保存账户
   Future<void> _save() async {
-    if (!_formKey.currentState!.validate()) return;
-    // 平台重名检测
-    final storage = StorageService();
-    bool isDuplicate = await storage.isPlatformNameExists(platform);
-    if (isDuplicate) {
-      if (!mounted) return;
-      AppDialogs.showInfo(
-        context,
-        title: "平台名冲突",
-        message: "平台 '$platform' 已存在，请更换名称。",
-      );
+    final String? error = await _validateStep1();
+    if (!mounted) return;
+    if (error != null) {
+      MessageUtil.show(context, error, isError: true);
+      setState(() => _step = 0);
       return;
     }
-    // 检测是否充分填写信息
-    bool hasAnyCredential =
-        name.trim().isNotEmpty ||
-        userId.trim().isNotEmpty ||
-        pswd.trim().isNotEmpty ||
-        email.trim().isNotEmpty ||
-        phone.trim().isNotEmpty;
-    if (!hasAnyCredential) {
-      if (!mounted) return;
-      AppDialogs.showInfo(
-        context,
-        title: "信息不足",
-        message: "请至少填写一项关键信息：[昵称 | ID | 密码 | 邮箱 | 手机]",
-      );
-      return;
-    }
-    // 保存新账户
     final newAccount = Account(
       id: const Uuid().v4(),
-      platform: platform,
-      url: url,
-      status: status,
-      name: name,
-      userId: userId,
-      email: email,
-      pswd: pswd,
-      phone: phone,
-      birth: _birthController.text.trim().isEmpty
-          ? null
-          : DateTime.tryParse(_birthController.text),
-      notes: notes,
-      signupDate: _signupController.text.trim().isEmpty
-          ? null
-          : DateTime.tryParse(_signupController.text),
-      realName: realName,
-      tags: tagsStr
-          .split(RegExp(r'[,，]'))
-          .map((t) => t.trim())
-          .where((t) => t.isNotEmpty)
-          .take(8)
-          .toList(), // 标签最大数量: 8
+      platform: _platformController.text,
+      url: _urlController.text,
+      status: _status,
+      name: _nameController.text,
+      userId: _userIdController.text,
+      email: _emailController.text,
+      pswd: _pswdController.text,
+      phone: _phoneController.text,
+      birth: _parseDate(_birthController.text),
+      notes: _notesController.text,
+      signupDate: _parseDate(_signupController.text),
+      realName: _realName,
+      tags: _tags,
       lastModified: DateTime.now().toIso8601String(),
     );
     await StorageService().insertAccount(newAccount);
@@ -134,180 +143,102 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     Navigator.pop(context, true);
   }
 
+  DateTime? _parseDate(String text) =>
+      text.trim().isEmpty ? null : DateTime.tryParse(text.trim());
+
+  // 是否已填写任何内容
+  bool get _hasInput =>
+      _platformController.text.trim().isNotEmpty ||
+      _nameController.text.trim().isNotEmpty ||
+      _userIdController.text.trim().isNotEmpty ||
+      _pswdController.text.isNotEmpty ||
+      _emailController.text.trim().isNotEmpty ||
+      _phoneController.text.trim().isNotEmpty ||
+      _urlController.text.trim().isNotEmpty ||
+      _birthController.text.trim().isNotEmpty ||
+      _signupController.text.trim().isNotEmpty ||
+      _notesController.text.trim().isNotEmpty ||
+      _tags.isNotEmpty ||
+      _realName;
+
+  // 取消(已填内容先确认)
+  void _cancel() {
+    if (!_hasInput) {
+      Navigator.pop(context, false);
+      return;
+    }
+    AppDialogs.showConfirm(
+      context,
+      title: "放弃新建？",
+      message: "已填写的内容不会保存。",
+      confirmText: "确认",
+      danger: true,
+      onConfirm: () {
+        if (mounted) Navigator.pop(context, false);
+      },
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: const Text("新增账户条目"),
-      content: SizedBox(
-        width: 500,
-        child: Form(
-          key: _formKey,
+      title: Text(_step == 0 ? "新增账户条目 (1/2)" : "新增账户条目 (2/2)"),
+      content: AnimatedSize(
+        duration: const Duration(milliseconds: 250),
+        curve: Curves.easeInOut,
+        alignment: Alignment.topCenter,
+        child: SizedBox(
+          width: 500,
           child: SingleChildScrollView(
-            child: Column(
-              mainAxisSize: MainAxisSize.min, // 紧凑布局
-              children: [
-                // 关键信息
-                SizedBox(height: _gap / 2),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "平台名称*"),
-                  validator: (v) => (v == null || v.isEmpty) ? "请输入平台名称" : null,
-                  onChanged: (v) => platform = v,
-                ),
-                const Divider(),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "用户昵称*"),
-                  onChanged: (v) => name = v,
-                ),
-                SizedBox(height: _gap),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "用户ID*"),
-                  onChanged: (v) => userId = v,
-                ),
-                SizedBox(height: _gap),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "密码*"),
-                  onChanged: (v) => pswd = v,
-                ),
-                SizedBox(height: _gap),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "绑定邮箱*"),
-                  onChanged: (v) => email = v,
-                ),
-                SizedBox(height: _gap),
-                TextFormField(
-                  decoration: const InputDecoration(labelText: "绑定手机*"),
-                  inputFormatters: [
-                    FilteringTextInputFormatter.digitsOnly,
-                    LengthLimitingTextInputFormatter(11),
-                  ],
-                  onChanged: (v) => phone = v,
-                ),
-                SizedBox(height: _gap),
-                // 附加信息
-                AnimatedSize(
-                  duration: const Duration(milliseconds: 300), // 动画时长
-                  curve: Curves.easeInOut,
-                  child: SizedBox(
-                    width: double.infinity,
-                    child: _isExpanded
-                        ? Column(
-                            children: [
-                              TextFormField(
-                                decoration: const InputDecoration(
-                                  labelText: "网址",
-                                ),
-                                onChanged: (v) => url = v,
-                              ),
-                              SizedBox(height: _gap),
-                              TextFormField(
-                                decoration: const InputDecoration(
-                                  labelText: "标签 (逗号分隔)",
-                                ),
-                                onChanged: (v) => tagsStr = v,
-                              ),
-                              SizedBox(height: _gap),
-                              DropdownButtonFormField<int>(
-                                initialValue: status,
-                                decoration: const InputDecoration(
-                                  labelText: "账户状态",
-                                ),
-                                items: const [
-                                  DropdownMenuItem(
-                                    value: 1,
-                                    child: Text("使用中"),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 0,
-                                    child: Text("未注册"),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 2,
-                                    child: Text("已注销"),
-                                  ),
-                                  DropdownMenuItem(
-                                    value: 3,
-                                    child: Text("无法使用"),
-                                  ),
-                                ],
-                                onChanged: (v) =>
-                                    setState(() => status = v ?? 1),
-                              ),
-                              SizedBox(height: _gap),
-                              TextFormField(
-                                controller: _birthController,
-                                decoration: InputDecoration(
-                                  labelText: "生日",
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(
-                                      Icons.calendar_today,
-                                      size: 16,
-                                    ),
-                                    onPressed: () =>
-                                        _pickDate(_birthController),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: _gap),
-                              TextFormField(
-                                controller: _signupController,
-                                decoration: InputDecoration(
-                                  labelText: "注册日期",
-                                  suffixIcon: IconButton(
-                                    icon: const Icon(
-                                      Icons.calendar_today,
-                                      size: 16,
-                                    ),
-                                    onPressed: () =>
-                                        _pickDate(_signupController),
-                                  ),
-                                ),
-                              ),
-                              SizedBox(height: _gap),
-                              CheckboxListTile(
-                                title: const Text("是否已实名"),
-                                value: realName,
-                                onChanged: (v) {
-                                  setState(() {
-                                    realName = v ?? false;
-                                  });
-                                },
-                              ),
-                              SizedBox(height: _gap),
-                              TextFormField(
-                                decoration: const InputDecoration(
-                                  labelText: "备注",
-                                ),
-                                onChanged: (v) => notes = v,
-                              ),
-                            ],
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ),
-                const SizedBox(height: 4),
-                Center(
-                  child: TextButton.icon(
-                    onPressed: () {
-                      setState(() => _isExpanded = !_isExpanded);
-                    },
-                    icon: Icon(
-                      _isExpanded ? Icons.expand_less : Icons.expand_more,
-                    ),
-                    label: Text(_isExpanded ? "收起附加信息" : "填写更多信息"),
-                  ),
-                ),
-              ],
-            ),
+            child: _step == 0 ? _buildRequiredStep() : _buildOptionalStep(),
           ),
         ),
       ),
-      actions: [
-        TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text("取消"),
-        ),
-        ElevatedButton(onPressed: _save, child: const Text("保存")),
-      ],
+      actions: _step == 0
+          ? [
+              TextButton(onPressed: _cancel, child: const Text("取消")),
+              ElevatedButton(onPressed: _next, child: const Text("下一步")),
+            ]
+          : [
+              TextButton(
+                onPressed: () => setState(() => _step = 0),
+                child: const Text("上一步"),
+              ),
+              ElevatedButton(onPressed: _save, child: const Text("完成")),
+            ],
+    );
+  }
+
+  // 第1页: 必填项
+  Widget _buildRequiredStep() {
+    return AccountRequiredFields(
+      platform: _platformController,
+      name: _nameController,
+      userId: _userIdController,
+      pswd: _pswdController,
+      email: _emailController,
+      phone: _phoneController,
+      passwordVisible: _passwordVisible,
+      onTogglePassword: () =>
+          setState(() => _passwordVisible = !_passwordVisible),
+    );
+  }
+
+  // 第2页: 均为选填
+  Widget _buildOptionalStep() {
+    return AccountOptionalFields(
+      url: _urlController,
+      tags: _tagsController,
+      birth: _birthController,
+      signup: _signupController,
+      notes: _notesController,
+      tagList: _tags,
+      onTagsChanged: (list) => setState(() => _tags = list),
+      globalTags: widget.globalTags,
+      status: _status,
+      onStatusChanged: (v) => setState(() => _status = v),
+      realName: _realName,
+      onRealNameChanged: (v) => setState(() => _realName = v),
     );
   }
 }

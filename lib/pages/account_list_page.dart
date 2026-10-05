@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-10-05 18:03:31
+ * @LastEditTime: 2026-10-05 18:57:10
  * @Description: 账户信息页(查看页)
  */
 
@@ -288,7 +288,9 @@ class AccountListPageState extends State<AccountListPage> {
           (await showAccountCreatePage(context, globalTags: _globalTags)) ==
           true;
     } else {
-      added = (await showNewAccountDialog(context)) == true;
+      added =
+          (await showNewAccountDialog(context, globalTags: _globalTags)) ==
+          true;
     }
     if (added) {
       refreshAccountList();

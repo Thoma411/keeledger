@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-04 21:27:10
+ * @LastEditTime: 2026-10-05 23:42:19
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -86,12 +86,198 @@ List<String>? appendTag(
   return [...tags, tag];
 }
 
+// 新增账户p1-必填字段
+class AccountRequiredFields extends StatelessWidget {
+  final TextEditingController platform, name, userId, pswd, email, phone;
+  final bool passwordVisible;
+  final VoidCallback onTogglePassword;
+
+  const AccountRequiredFields({
+    super.key,
+    required this.platform,
+    required this.name,
+    required this.userId,
+    required this.pswd,
+    required this.email,
+    required this.phone,
+    required this.passwordVisible,
+    required this.onTogglePassword,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        AccountFieldRow(
+          label: "平台名称（必填）",
+          controller: platform,
+          isEditing: true,
+          floatingLabel: true,
+        ),
+        const FieldHint("以下至少填写一项"),
+        AccountFieldRow(
+          label: "用户昵称",
+          controller: name,
+          isEditing: true,
+          floatingLabel: true,
+        ),
+        AccountFieldRow(
+          label: "登录账号",
+          controller: userId,
+          isEditing: true,
+          floatingLabel: true,
+        ),
+        AccountPasswordRow(
+          controller: pswd,
+          isEditing: true,
+          isVisible: passwordVisible,
+          onToggleVisible: onTogglePassword,
+          floatingLabel: true,
+        ),
+        AccountFieldRow(
+          label: "绑定邮箱",
+          controller: email,
+          isEditing: true,
+          floatingLabel: true,
+        ),
+        AccountFieldRow(
+          label: "绑定手机",
+          controller: phone,
+          isEditing: true,
+          floatingLabel: true,
+          inputFormatters: [
+            FilteringTextInputFormatter.digitsOnly,
+            LengthLimitingTextInputFormatter(11),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// 新增账户p2-选填字段
+class AccountOptionalFields extends StatelessWidget {
+  final TextEditingController url, tags, birth, signup, notes;
+  final List<String> tagList;
+  final ValueChanged<List<String>> onTagsChanged;
+  final Set<String> globalTags;
+  final int status;
+  final ValueChanged<int> onStatusChanged;
+  final bool realName;
+  final ValueChanged<bool> onRealNameChanged;
+
+  const AccountOptionalFields({
+    super.key,
+    required this.url,
+    required this.tags,
+    required this.birth,
+    required this.signup,
+    required this.notes,
+    required this.tagList,
+    required this.onTagsChanged,
+    required this.globalTags,
+    required this.status,
+    required this.onStatusChanged,
+    required this.realName,
+    required this.onRealNameChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        const FieldHint("以下均为选填项，可跳过"),
+        AccountFieldRow(
+          label: "网址",
+          controller: url,
+          isEditing: true,
+          floatingLabel: true,
+        ),
+        AccountTagsRow(
+          tags: tagList,
+          controller: tags,
+          isEditing: true,
+          globalTags: globalTags,
+          onChanged: onTagsChanged,
+        ),
+        Padding(
+          padding: const EdgeInsets.symmetric(vertical: 6),
+          child: DropdownButtonFormField<int>(
+            initialValue: status,
+            decoration: const InputDecoration(labelText: "账户状态", isDense: true),
+            items: const [
+              DropdownMenuItem(value: 1, child: Text("使用中")),
+              DropdownMenuItem(value: 0, child: Text("未注册")),
+              DropdownMenuItem(value: 2, child: Text("已注销")),
+              DropdownMenuItem(value: 3, child: Text("无法使用")),
+            ],
+            onChanged: (v) => onStatusChanged(v ?? 1),
+          ),
+        ),
+        AccountFieldRow(
+          label: "生日",
+          controller: birth,
+          isEditing: true,
+          isDateField: true,
+          floatingLabel: true,
+        ),
+        AccountFieldRow(
+          label: "注册日期",
+          controller: signup,
+          isEditing: true,
+          isDateField: true,
+          floatingLabel: true,
+        ),
+        CheckboxListTile(
+          title: const Text("是否已实名", style: TextStyle(fontSize: AppText.body)),
+          value: realName,
+          contentPadding: EdgeInsets.zero,
+          onChanged: (v) => onRealNameChanged(v ?? false),
+        ),
+        AccountFieldRow(
+          label: "备注",
+          controller: notes,
+          isEditing: true,
+          maxLines: 5,
+          floatingLabel: true,
+        ),
+      ],
+    );
+  }
+}
+
+// 分组说明
+class FieldHint extends StatelessWidget {
+  final String text;
+  const FieldHint(this.text, {super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 4),
+      child: Text(
+        text,
+        style: TextStyle(
+          fontSize: AppText.caption,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+      ),
+    );
+  }
+}
+
 // 单行字段: 标签+只读值/输入框
 class AccountFieldRow extends StatelessWidget {
   final String label;
   final TextEditingController controller;
   final bool isEditing;
   final bool isDateField;
+  // true=录入样式; false=展示样式
+  final bool floatingLabel;
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
 
@@ -101,6 +287,7 @@ class AccountFieldRow extends StatelessWidget {
     required this.controller,
     required this.isEditing,
     this.isDateField = false,
+    this.floatingLabel = false,
     this.maxLines = 1,
     this.inputFormatters,
   });
@@ -108,6 +295,29 @@ class AccountFieldRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final bool isMultiline = maxLines > 1;
+    // 录入样式
+    if (floatingLabel) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          minLines: isMultiline ? 1 : null,
+          inputFormatters: _formatters,
+          style: const TextStyle(
+            fontSize: AppText.body,
+            fontWeight: FontWeight.w500,
+          ),
+          decoration: InputDecoration(
+            labelText: label,
+            isDense: true,
+            alignLabelWithHint: isMultiline,
+            suffixIcon: isDateField ? _dateButton(context, controller) : null,
+            suffixIconConstraints: _suffixIconConstraints,
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -131,12 +341,7 @@ class AccountFieldRow extends StatelessWidget {
               maxLines: maxLines,
               // 行数随内容增长
               minLines: isMultiline ? 1 : null,
-              inputFormatters: isDateField
-                  ? [
-                      FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
-                      LengthLimitingTextInputFormatter(10),
-                    ]
-                  : inputFormatters,
+              inputFormatters: _formatters,
               style: const TextStyle(
                 fontSize: AppText.body,
                 fontWeight: FontWeight.w500,
@@ -153,24 +358,47 @@ class AccountFieldRow extends StatelessWidget {
     );
   }
 
+  // 日期字段限制可输入字符
+  List<TextInputFormatter>? get _formatters => isDateField
+      ? [
+          FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
+          LengthLimitingTextInputFormatter(10),
+        ]
+      : inputFormatters;
+
   // 日期选择按钮
   Widget _dateButton(BuildContext context, TextEditingController controller) {
-    return IconButton(
-      icon: Icon(
+    return compactSuffixIcon(
+      Icon(
         Icons.calendar_today,
         size: 16,
         color: Theme.of(context).colorScheme.primary,
       ),
-      onPressed: () => _pickDate(context, controller),
-      padding: EdgeInsets.zero,
-      style: IconButton.styleFrom(
-        minimumSize: const Size(32, 32),
-        padding: EdgeInsets.zero,
-        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-      ),
+      () => _pickDate(context, controller),
     );
   }
 }
+
+// 后缀图标按钮
+Widget compactSuffixIcon(Widget icon, VoidCallback onPressed) {
+  return IconButton(
+    icon: icon,
+    onPressed: onPressed,
+    padding: EdgeInsets.zero,
+    style: IconButton.styleFrom(
+      minimumSize: const Size(32, 32),
+      padding: EdgeInsets.zero,
+      tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+    ),
+  );
+}
+
+// 后缀图标位尺寸
+const BoxConstraints _suffixIconConstraints = BoxConstraints(
+  minWidth: 32,
+  minHeight: 32,
+  maxHeight: 32,
+);
 
 // 日历选择器
 Future<void> _pickDate(
@@ -199,6 +427,8 @@ class AccountPasswordRow extends StatelessWidget {
   final bool isEditing;
   final bool isVisible;
   final VoidCallback onToggleVisible;
+  // true=录入样式
+  final bool floatingLabel;
 
   const AccountPasswordRow({
     super.key,
@@ -206,10 +436,37 @@ class AccountPasswordRow extends StatelessWidget {
     required this.isEditing,
     required this.isVisible,
     required this.onToggleVisible,
+    this.floatingLabel = false,
   });
 
   @override
   Widget build(BuildContext context) {
+    // 录入样式
+    if (floatingLabel) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: 6.0),
+        child: TextFormField(
+          controller: controller,
+          obscureText: !isVisible,
+          style: const TextStyle(
+            fontSize: AppText.body,
+            fontFamily: 'Consolas',
+          ),
+          decoration: InputDecoration(
+            labelText: "密码",
+            isDense: true,
+            suffixIcon: compactSuffixIcon(
+              Icon(
+                isVisible ? Icons.visibility : Icons.visibility_off,
+                size: 18,
+              ),
+              onToggleVisible,
+            ),
+            suffixIconConstraints: _suffixIconConstraints,
+          ),
+        ),
+      );
+    }
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(

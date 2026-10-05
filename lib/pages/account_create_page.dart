@@ -1,12 +1,11 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-05 17:22:39
- * @LastEditTime: 2026-10-05 17:58:31
+ * @LastEditTime: 2026-10-05 19:20:16
  * @Description: 新增账户页
  */
 
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/account.dart';
@@ -213,43 +212,16 @@ class _AccountCreatePageState extends State<AccountCreatePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        AccountFieldRow(
-          label: "平台名称（必填）",
-          controller: _platformController,
-          isEditing: true,
-        ),
-        const SizedBox(height: 8),
-        _hint("以下至少填写一项"),
-        AccountFieldRow(
-          label: "用户昵称",
-          controller: _nameController,
-          isEditing: true,
-        ),
-        AccountFieldRow(
-          label: "登录账号",
-          controller: _userIdController,
-          isEditing: true,
-        ),
-        AccountPasswordRow(
-          controller: _pswdController,
-          isEditing: true,
-          isVisible: _passwordVisible,
-          onToggleVisible: () =>
+        AccountRequiredFields(
+          platform: _platformController,
+          name: _nameController,
+          userId: _userIdController,
+          pswd: _pswdController,
+          email: _emailController,
+          phone: _phoneController,
+          passwordVisible: _passwordVisible,
+          onTogglePassword: () =>
               setState(() => _passwordVisible = !_passwordVisible),
-        ),
-        AccountFieldRow(
-          label: "绑定邮箱",
-          controller: _emailController,
-          isEditing: true,
-        ),
-        AccountFieldRow(
-          label: "绑定手机",
-          controller: _phoneController,
-          isEditing: true,
-          inputFormatters: [
-            FilteringTextInputFormatter.digitsOnly,
-            LengthLimitingTextInputFormatter(11),
-          ],
         ),
       ],
     );
@@ -260,83 +232,21 @@ class _AccountCreatePageState extends State<AccountCreatePage> {
     return ListView(
       padding: const EdgeInsets.all(16),
       children: [
-        _hint("以下均为选填，可直接完成"),
-        AccountFieldRow(
-          label: "网址",
-          controller: _urlController,
-          isEditing: true,
-        ),
-        AccountTagsRow(
-          tags: _tags,
-          controller: _tagsController,
-          isEditing: true,
+        AccountOptionalFields(
+          url: _urlController,
+          tags: _tagsController,
+          birth: _birthController,
+          signup: _signupDateController,
+          notes: _notesController,
+          tagList: _tags,
+          onTagsChanged: (list) => setState(() => _tags = list),
           globalTags: widget.globalTags,
-          onChanged: (list) => setState(() => _tags = list),
-        ),
-        _buildStatusRow(),
-        AccountFieldRow(
-          label: "生日",
-          controller: _birthController,
-          isEditing: true,
-          isDateField: true,
-        ),
-        AccountFieldRow(
-          label: "注册日期",
-          controller: _signupDateController,
-          isEditing: true,
-          isDateField: true,
-        ),
-        CheckboxListTile(
-          title: const Text("是否已实名", style: TextStyle(fontSize: AppText.body)),
-          value: _realName,
-          contentPadding: EdgeInsets.zero,
-          onChanged: (v) => setState(() => _realName = v ?? false),
-        ),
-        AccountFieldRow(
-          label: "备注",
-          controller: _notesController,
-          isEditing: true,
-          maxLines: 5,
+          status: _status,
+          onStatusChanged: (v) => setState(() => _status = v),
+          realName: _realName,
+          onRealNameChanged: (v) => setState(() => _realName = v),
         ),
       ],
-    );
-  }
-
-  // 账户状态下拉
-  Widget _buildStatusRow() {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 8),
-      child: DropdownButtonFormField<int>(
-        initialValue: _status,
-        decoration: InputDecoration(
-          labelText: "账户状态",
-          labelStyle: TextStyle(
-            color: Theme.of(context).colorScheme.onSurfaceVariant,
-            fontSize: AppText.caption,
-          ),
-        ),
-        items: const [
-          DropdownMenuItem(value: 1, child: Text("使用中")),
-          DropdownMenuItem(value: 0, child: Text("未注册")),
-          DropdownMenuItem(value: 2, child: Text("已注销")),
-          DropdownMenuItem(value: 3, child: Text("无法使用")),
-        ],
-        onChanged: (v) => setState(() => _status = v ?? 1),
-      ),
-    );
-  }
-
-  // 说明文字
-  Widget _hint(String text) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 4),
-      child: Text(
-        text,
-        style: TextStyle(
-          fontSize: AppText.caption,
-          color: Theme.of(context).colorScheme.onSurfaceVariant,
-        ),
-      ),
     );
   }
 
