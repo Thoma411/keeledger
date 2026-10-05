@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-19 15:34:51
+ * @LastEditTime: 2026-10-05 18:03:31
  * @Description: 账户信息页(查看页)
  */
 
@@ -13,6 +13,7 @@ import '../widgets/account_ui_utils.dart';
 import '../widgets/alphabet_indexer.dart';
 import '../widgets/app_dialogs.dart';
 import '../widgets/add_account_dialog.dart';
+import 'account_create_page.dart';
 import '../widgets/account_list_tile.dart';
 import '../widgets/account_card.dart';
 import '../widgets/account_detail_view.dart';
@@ -280,8 +281,16 @@ class AccountListPageState extends State<AccountListPage> {
       );
       return; // 拦截后续的新增逻辑
     }
-    final bool? added = await showNewAccountDialog(context);
-    if (added == true) {
+    bool added = false;
+    // 移动端展示向导, 桌面端弹框
+    if (AccountUiUtils.isMobileLayout(context)) {
+      added =
+          (await showAccountCreatePage(context, globalTags: _globalTags)) ==
+          true;
+    } else {
+      added = (await showNewAccountDialog(context)) == true;
+    }
+    if (added) {
       refreshAccountList();
       if (mounted) MessageUtil.show(context, "账户添加成功");
     }
