@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-06 17:00:01
+ * @LastEditTime: 2026-10-06 23:29:11
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -124,7 +124,7 @@ class AccountRequiredFields extends StatelessWidget {
           floatingLabel: true,
         ),
         AccountFieldRow(
-          label: "登录账号",
+          label: "用户ID",
           controller: userId,
           isEditing: true,
           floatingLabel: true,

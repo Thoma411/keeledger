@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-10-04 21:08:51
+ * @LastEditTime: 2026-10-06 23:29:00
  * @Description: 账户信息详情页
  */
 
@@ -786,7 +786,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     ],
                     // 分组1: 核心凭据
                     _buildEditableInfoRow("用户昵称", _nameController),
-                    _buildEditableInfoRow("登录账号", _userIdController),
+                    _buildEditableInfoRow("用户ID", _userIdController),
                     _buildEditableInfoRow("绑定邮箱", _emailController),
                     _buildEditableInfoRow(
                       "绑定手机",
@@ -846,7 +846,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                 children: [
                   // 分组1: 核心凭据
                   _buildEditableInfoRow("用户昵称", _nameController),
-                  _buildEditableInfoRow("登录账号", _userIdController),
+                  _buildEditableInfoRow("用户ID", _userIdController),
                   _buildEditableInfoRow("绑定邮箱", _emailController),
                   _buildEditableInfoRow(
                     "绑定手机",
