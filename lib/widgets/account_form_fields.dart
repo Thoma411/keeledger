@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-06 16:17:03
+ * @LastEditTime: 2026-10-06 17:00:01
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -218,20 +218,7 @@ class AccountOptionalFields extends StatelessWidget {
             onChanged: (v) => onStatusChanged(v ?? 1),
           ),
         ),
-        AccountFieldRow(
-          label: "生日",
-          controller: birth,
-          isEditing: true,
-          isDateField: true,
-          floatingLabel: true,
-        ),
-        AccountFieldRow(
-          label: "注册日期",
-          controller: signup,
-          isEditing: true,
-          isDateField: true,
-          floatingLabel: true,
-        ),
+        _buildDateFields(context),
         CheckboxListTile(
           title: const Text("是否已实名", style: TextStyle(fontSize: AppText.body)),
           value: realName,
@@ -245,6 +232,39 @@ class AccountOptionalFields extends StatelessWidget {
           maxLines: 5,
           floatingLabel: true,
         ),
+      ],
+    );
+  }
+
+  // 生日/注册日期
+  Widget _buildDateFields(BuildContext context) {
+    final Widget birthField = AccountFieldRow(
+      label: "生日",
+      controller: birth,
+      isEditing: true,
+      isDateField: true,
+      floatingLabel: true,
+    );
+    final Widget signupField = AccountFieldRow(
+      label: "注册日期",
+      controller: signup,
+      isEditing: true,
+      isDateField: true,
+      floatingLabel: true,
+    );
+    // 字号过大时显示为两行
+    if (MediaQuery.textScalerOf(context).scale(1.0) > 1.0) {
+      return Column(
+        mainAxisSize: MainAxisSize.min,
+        children: [birthField, signupField],
+      );
+    }
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Expanded(child: birthField),
+        const SizedBox(width: 12),
+        Expanded(child: signupField),
       ],
     );
   }
@@ -549,72 +569,83 @@ class AccountTagsRow extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        fieldLabel(context, "标签 (回车切分)"),
-        const SizedBox(height: 8),
-        Container(
-          padding: const EdgeInsets.all(8),
-          decoration: BoxDecoration(
-            color: isEditing
-                ? Theme.of(
-                    context,
-                  ).colorScheme.onSurfaceVariant.withValues(alpha: 0.05)
-                : Colors.transparent,
-            borderRadius: BorderRadius.circular(8),
-            border: isEditing
-                ? Border.all(
-                    color: Theme.of(
+    return Padding(
+      // 标签块自带边框
+      padding: const EdgeInsets.symmetric(vertical: 12),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          fieldLabel(context, "标签 (回车切分)"),
+          const SizedBox(height: 8),
+          Container(
+            padding: const EdgeInsets.all(8),
+            decoration: BoxDecoration(
+              color: isEditing
+                  ? Theme.of(
                       context,
-                    ).colorScheme.primary.withValues(alpha: 0.3),
-                  )
-                : null,
-          ),
-          child: Wrap(
-            spacing: 8,
-            runSpacing: 8,
-            children: [
-              ...tags.map(
-                (tag) => InputChip(
-                  label: Text(
-                    tag,
-                    style: const TextStyle(fontSize: AppText.label),
-                  ),
-                  shape: const StadiumBorder(),
-                  onDeleted: isEditing
-                      ? () => onChanged([...tags]..remove(tag))
-                      : null,
-                  onPressed: !isEditing ? () => onTagClicked?.call(tag) : null,
-                  deleteIcon: const Icon(Icons.cancel, size: 14),
-                  materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                ),
-              ),
-              if (isEditing)
-                SizedBox(
-                  width: 100,
-                  child: TextField(
-                    controller: controller,
-                    decoration: const InputDecoration(
-                      hintText: "新标签...",
-                      border: InputBorder.none,
-                      isDense: true,
-                      contentPadding: EdgeInsets.symmetric(vertical: 4),
+                    ).colorScheme.onSurfaceVariant.withValues(alpha: 0.05)
+                  : Colors.transparent,
+              borderRadius: BorderRadius.circular(8),
+              border: isEditing
+                  ? Border.all(
+                      color: Theme.of(
+                        context,
+                      ).colorScheme.primary.withValues(alpha: 0.3),
+                    )
+                  : null,
+            ),
+            child: Wrap(
+              spacing: 8,
+              runSpacing: 8,
+              children: [
+                ...tags.map(
+                  (tag) => InputChip(
+                    label: Text(
+                      tag,
+                      style: const TextStyle(fontSize: AppText.label),
                     ),
-                    style: const TextStyle(fontSize: AppText.sub),
-                    onSubmitted: (val) {
-                      final List<String>? next = appendTag(context, tags, val);
-                      if (next == null) return;
-                      controller.clear();
-                      onChanged(next);
-                    },
+                    shape: const StadiumBorder(),
+                    onDeleted: isEditing
+                        ? () => onChanged([...tags]..remove(tag))
+                        : null,
+                    onPressed: !isEditing
+                        ? () => onTagClicked?.call(tag)
+                        : null,
+                    deleteIcon: const Icon(Icons.cancel, size: 14),
+                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   ),
                 ),
-            ],
+                if (isEditing)
+                  SizedBox(
+                    width: 100,
+                    child: TextField(
+                      controller: controller,
+                      decoration: const InputDecoration(
+                        hintText: "新标签...",
+                        border: InputBorder.none,
+                        isDense: true,
+                        contentPadding: EdgeInsets.symmetric(vertical: 4),
+                      ),
+                      style: const TextStyle(fontSize: AppText.sub),
+                      onSubmitted: (val) {
+                        final List<String>? next = appendTag(
+                          context,
+                          tags,
+                          val,
+                        );
+                        if (next == null) return;
+                        controller.clear();
+                        onChanged(next);
+                      },
+                    ),
+                  ),
+              ],
+            ),
           ),
-        ),
-        if (isEditing && controller.text.isNotEmpty) _buildSuggestions(context),
-      ],
+          if (isEditing && controller.text.isNotEmpty)
+            _buildSuggestions(context),
+        ],
+      ),
     );
   }
 
@@ -646,7 +677,9 @@ class AccountTagsRow extends StatelessWidget {
                 ),
                 onPressed: () {
                   final List<String>? next = appendTag(context, tags, s);
-                  if (next != null) onChanged(next);
+                  if (next == null) return;
+                  controller.clear(); // 采纳建议后清空输入框
+                  onChanged(next);
                 },
                 backgroundColor: Theme.of(
                   context,
