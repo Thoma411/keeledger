@@ -1,7 +1,7 @@
 name: keeledger
 description: "Keeledger - A zero-knowledge envelope-encrypted account and password manager."
 publish_to: 'none'
-version: 1.5.0+15
+version: 1.5.1+16
 
 environment:
   sdk: ^3.10.8
