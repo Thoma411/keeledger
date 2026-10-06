@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-05 23:42:19
+ * @LastEditTime: 2026-10-06 16:17:03
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -86,7 +86,7 @@ List<String>? appendTag(
   return [...tags, tag];
 }
 
-// 新增账户p1-必填字段
+// 新建账户p1-必填字段
 class AccountRequiredFields extends StatelessWidget {
   final TextEditingController platform, name, userId, pswd, email, phone;
   final bool passwordVisible;
@@ -157,7 +157,7 @@ class AccountRequiredFields extends StatelessWidget {
   }
 }
 
-// 新增账户p2-选填字段
+// 新建账户p2-选填字段
 class AccountOptionalFields extends StatelessWidget {
   final TextEditingController url, tags, birth, signup, notes;
   final List<String> tagList;

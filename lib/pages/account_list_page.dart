@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-10-05 18:57:10
+ * @LastEditTime: 2026-10-06 16:17:44
  * @Description: 账户信息页(查看页)
  */
 
@@ -265,7 +265,7 @@ class AccountListPageState extends State<AccountListPage> {
     });
   }
 
-  // 弹出新增账户对话框
+  // 弹出新建账户对话框
   void showAddAccountDialog() async {
     if (_allAccounts.length >= 4096) {
       AppDialogs.showInfo(context, title: "这么能存？", message: "账户数量已达上限。");
@@ -279,7 +279,7 @@ class AccountListPageState extends State<AccountListPage> {
         title: "操作受阻",
         message: "请先在主界面“创建保险箱”并设置主密码，然后再添加账户条目。",
       );
-      return; // 拦截后续的新增逻辑
+      return; // 拦截后续的新建逻辑
     }
     bool added = false;
     // 移动端展示向导, 桌面端弹框
@@ -868,7 +868,7 @@ class AccountListPageState extends State<AccountListPage> {
                                   Icons.add_circle_outline,
                                   color: Theme.of(context).colorScheme.primary,
                                 ),
-                                tooltip: "新增账户",
+                                tooltip: "新建账户",
                                 onPressed: showAddAccountDialog,
                               ),
                             // 收藏夹(仅看星标)开关

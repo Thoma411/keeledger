@@ -1,8 +1,8 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-30 22:24:38
- * @LastEditTime: 2026-10-05 19:20:53
- * @Description: 新增账户表单对话框
+ * @LastEditTime: 2026-10-06 14:02:14
+ * @Description: 新建账户表单对话框
  */
 
 import 'package:flutter/material.dart';
@@ -14,7 +14,7 @@ import '../utils/utils.dart';
 import 'account_form_fields.dart';
 import 'app_dialogs.dart';
 
-// 弹出"新增账户"对话框
+// 弹出"新建账户"对话框
 Future<bool?> showNewAccountDialog(
   BuildContext context, {
   required Set<String> globalTags,
@@ -182,7 +182,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   @override
   Widget build(BuildContext context) {
     return AlertDialog(
-      title: Text(_step == 0 ? "新增账户条目 (1/2)" : "新增账户条目 (2/2)"),
+      title: Text(_step == 0 ? "新建账户条目 (1/2)" : "新建账户条目 (2/2)"),
       content: AnimatedSize(
         duration: const Duration(milliseconds: 250),
         curve: Curves.easeInOut,

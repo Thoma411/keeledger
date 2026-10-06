@@ -1,8 +1,8 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-05 17:22:39
- * @LastEditTime: 2026-10-05 19:20:16
- * @Description: 新增账户页
+ * @LastEditTime: 2026-10-06 16:18:18
+ * @Description: 新建账户页
  */
 
 import 'package:flutter/material.dart';
@@ -15,7 +15,7 @@ import '../utils/utils.dart';
 import '../widgets/account_form_fields.dart';
 import '../widgets/app_dialogs.dart';
 
-// 进入新增账户页, 返回是否创建成功
+// 进入新建账户页, 返回是否创建成功
 Future<bool?> showAccountCreatePage(
   BuildContext context, {
   required Set<String> globalTags,

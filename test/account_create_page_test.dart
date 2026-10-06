@@ -1,8 +1,8 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-05 17:34:38
- * @LastEditTime: 2026-10-05 17:57:44
- * @Description: 新增账户页测试
+ * @LastEditTime: 2026-10-06 16:18:54
+ * @Description: 新建账户页测试
  */
 
 import 'package:flutter/material.dart';
