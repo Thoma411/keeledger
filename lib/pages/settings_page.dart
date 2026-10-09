@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-10-06 17:30:04
+ * @LastEditTime: 2026-10-09 22:35:46
  * @Description: 设置页
  */
 
@@ -754,7 +754,7 @@ class SettingsPageState extends State<SettingsPage> {
           trailing: DropdownButton<String>(
             value: _darkMode,
             underline: const SizedBox(),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.menu,
             onChanged: (v) {
               if (v == null || v == _darkMode) return;
               _changeDarkMode(v);
@@ -780,7 +780,7 @@ class SettingsPageState extends State<SettingsPage> {
                 _listStyle ??
                 (AccountUiUtils.isMobileLayout(context) ? 'classic' : 'card'),
             underline: const SizedBox(),
-            borderRadius: BorderRadius.circular(8),
+            borderRadius: AppRadius.menu,
             onChanged: (v) async {
               if (v == null || v == _listStyle) return;
               setState(() => _listStyle = v);

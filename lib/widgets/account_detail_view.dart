@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-10-06 23:29:00
+ * @LastEditTime: 2026-10-09 22:36:23
  * @Description: 账户信息详情页
  */
 
@@ -190,6 +190,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       value: _currentStatus,
                       isDense: true,
                       underline: const SizedBox(), // 隐藏下划线
+                      borderRadius: AppRadius.menu,
                       items: const [
                         DropdownMenuItem(
                           value: 1,
@@ -667,6 +668,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     value: _currentStatus,
                     isDense: true,
                     underline: const SizedBox(),
+                    borderRadius: AppRadius.menu,
                     style: TextStyle(
                       fontSize: AppText.sub,
                       color: Theme.of(context).colorScheme.primary,

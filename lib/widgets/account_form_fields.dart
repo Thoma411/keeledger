@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-06 23:29:11
+ * @LastEditTime: 2026-10-09 22:36:31
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -208,6 +208,7 @@ class AccountOptionalFields extends StatelessWidget {
           padding: const EdgeInsets.symmetric(vertical: 6),
           child: DropdownButtonFormField<int>(
             initialValue: status,
+            borderRadius: AppRadius.menu,
             decoration: const InputDecoration(labelText: "账户状态", isDense: true),
             items: const [
               DropdownMenuItem(value: 1, child: Text("使用中")),

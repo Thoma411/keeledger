@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-09 23:51:46
- * @LastEditTime: 2026-09-20 22:26:51
+ * @LastEditTime: 2026-10-09 22:35:54
  * @Description: main
  */
 
@@ -172,6 +172,10 @@ class KeeledgerApp extends StatelessWidget {
       cardTheme: CardThemeData(
         elevation: 2,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+      ),
+      // 弹出菜单圆角
+      popupMenuTheme: const PopupMenuThemeData(
+        shape: RoundedRectangleBorder(borderRadius: AppRadius.menu),
       ),
       // 统一输入框风格
       inputDecorationTheme: InputDecorationTheme(

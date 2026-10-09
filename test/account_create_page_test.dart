@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-05 17:34:38
- * @LastEditTime: 2026-10-06 16:18:54
+ * @LastEditTime: 2026-10-09 22:35:37
  * @Description: 新建账户页测试
  */
 
@@ -20,7 +20,7 @@ void main() {
     expect(find.text('平台名称（必填）'), findsOneWidget);
     expect(find.text('以下至少填写一项'), findsOneWidget);
     expect(find.text('用户昵称'), findsOneWidget);
-    expect(find.text('登录账号'), findsOneWidget);
+    expect(find.text('用户ID'), findsOneWidget);
     expect(find.text('绑定邮箱'), findsOneWidget);
     expect(find.text('绑定手机'), findsOneWidget);
     expect(find.textContaining('*'), findsNothing);

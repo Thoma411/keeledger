@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-10-06 17:02:02
+ * @LastEditTime: 2026-10-09 22:35:49
  * @Description: 工具类
  */
 
@@ -49,6 +49,11 @@ class FontScaleUtil {
   static double toScale(String level) => level == 'large' ? large : normal;
   // 是否为大号字体
   static bool isLarge(String level) => level == 'large';
+}
+
+class AppRadius {
+  // 下拉/弹出菜单圆角
+  static const BorderRadius menu = BorderRadius.all(Radius.circular(12));
 }
 
 class MessageUtil {
