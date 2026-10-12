@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-09-24 23:27:08
+ * @LastEditTime: 2026-10-09 23:19:30
  * @Description: 与SQLite交互的方法
  */
 
@@ -12,6 +12,7 @@ import 'package:path/path.dart';
 import 'package:path_provider/path_provider.dart';
 
 import '../models/account.dart';
+import '../models/preset.dart';
 import '../utils/app_paths.dart';
 import 'settings_service.dart';
 import 'icon_service.dart';
@@ -130,6 +131,16 @@ class StorageService {
       CREATE TABLE IF NOT EXISTS icon_cache (
         key TEXT PRIMARY KEY,
         data BLOB NOT NULL
+      )
+    ''');
+    // 常用信息表: 名称/类型明文, 内容密文
+    await db.execute('''
+      CREATE TABLE IF NOT EXISTS presets (
+        id TEXT PRIMARY KEY,
+        name TEXT NOT NULL,
+        kind TEXT NOT NULL,
+        value TEXT NOT NULL,
+        last_modified TEXT
       )
     ''');
 
@@ -267,5 +278,51 @@ class StorageService {
       whereArgs: [id],
     );
     return res.isNotEmpty;
+  }
+
+  // 读取全部常用信息
+  Future<List<Preset>> getAllPresets() async {
+    // 未建库时直接返回空列表, 不触发数据库初始化
+    if (!await isDatabaseExists()) return [];
+
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'presets',
+      orderBy: 'kind COLLATE NOCASE ASC, name COLLATE NOCASE ASC',
+    );
+    return maps.map(Preset.fromMap).toList();
+  }
+
+  // 常用信息同名检查
+  Future<bool> isPresetNameExists(String name, {String? excludeId}) async {
+    final db = await database;
+    final List<Map<String, dynamic>> maps = await db.query(
+      'presets',
+      where: excludeId == null
+          ? 'LOWER(name) = ?'
+          : 'LOWER(name) = ? AND id != ?',
+      whereArgs: excludeId == null
+          ? [name.toLowerCase().trim()]
+          : [name.toLowerCase().trim(), excludeId],
+    );
+    return maps.isNotEmpty;
+  }
+
+  // 保存常用信息(同id覆盖)
+  Future<void> savePreset(Preset preset) async {
+    final db = await database;
+    await db.insert(
+      'presets',
+      preset.toMap(),
+      conflictAlgorithm: ConflictAlgorithm.replace,
+    );
+    await _incrementRevision();
+  }
+
+  // 删除常用信息
+  Future<void> deletePreset(String id) async {
+    final db = await database;
+    await db.delete('presets', where: 'id = ?', whereArgs: [id]);
+    await _incrementRevision();
   }
 }
