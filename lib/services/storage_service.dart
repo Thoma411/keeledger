@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-10-09 23:19:30
+ * @LastEditTime: 2026-10-14 00:36:48
  * @Description: 与SQLite交互的方法
  */
 
@@ -288,9 +288,17 @@ class StorageService {
     final db = await database;
     final List<Map<String, dynamic>> maps = await db.query(
       'presets',
-      orderBy: 'kind COLLATE NOCASE ASC, name COLLATE NOCASE ASC',
+      orderBy: 'name COLLATE NOCASE ASC',
     );
-    return maps.map(Preset.fromMap).toList();
+    final List<Preset> presets = maps.map(Preset.fromMap).toList();
+    // 类型顺序取自枚举
+    presets.sort((a, b) {
+      final int byKind = a.kind.index.compareTo(b.kind.index);
+      return byKind != 0
+          ? byKind
+          : a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return presets;
   }
 
   // 常用信息同名检查

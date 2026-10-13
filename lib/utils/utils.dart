@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-10-09 22:35:49
+ * @LastEditTime: 2026-10-14 00:38:25
  * @Description: 工具类
  */
 
@@ -140,6 +140,10 @@ class MessageUtil {
           if (identical(_toastEntry, entry)) _toastEntry = null;
           if (entry.mounted) entry.remove();
         },
+        // 整棵树被销毁时清除悬空引用
+        onDisposed: () {
+          if (identical(_toastEntry, entry)) _toastEntry = null;
+        },
       ),
     );
     _toastEntry = entry;
@@ -153,12 +157,14 @@ class _OverlayToast extends StatefulWidget {
   final bool isError;
   final Duration duration;
   final VoidCallback onDone;
+  final VoidCallback onDisposed;
 
   const _OverlayToast({
     required this.message,
     required this.isError,
     required this.duration,
     required this.onDone,
+    required this.onDisposed,
   });
 
   @override
@@ -184,6 +190,7 @@ class _OverlayToastState extends State<_OverlayToast>
   void dispose() {
     _timer?.cancel();
     _controller.dispose();
+    widget.onDisposed();
     super.dispose();
   }
 

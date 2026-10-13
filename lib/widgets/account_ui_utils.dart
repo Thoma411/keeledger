@@ -8,6 +8,7 @@
 import 'dart:io';
 import 'package:flutter/material.dart';
 
+import '../models/preset.dart';
 import '../services/settings_service.dart';
 import '../utils/app_text.dart';
 
@@ -47,6 +48,20 @@ class AccountUiUtils {
       Theme.of(context).brightness == Brightness.dark
       ? Icons.shield_moon_outlined
       : Icons.shield_outlined;
+
+  // 常用信息类型图标
+  static IconData presetKindIcon(PresetKind kind) {
+    switch (kind) {
+      case PresetKind.nickname:
+        return Icons.person_outline;
+      case PresetKind.password:
+        return Icons.lock_outline;
+      case PresetKind.email:
+        return Icons.alternate_email;
+      case PresetKind.phone:
+        return Icons.smartphone;
+    }
+  }
 
   // 将数字状态码转换为易读文字
   static String getStatusText(int status) {

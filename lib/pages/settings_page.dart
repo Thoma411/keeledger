@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-10-09 22:35:46
+ * @LastEditTime: 2026-10-14 00:35:46
  * @Description: 设置页
  */
 
@@ -27,6 +27,7 @@ import '../utils/app_text.dart';
 import '../utils/utils.dart';
 import 'login_page.dart';
 import 'help_page.dart';
+import 'preset_manager_page.dart';
 import '../main.dart';
 
 // 设置界面
@@ -863,6 +864,13 @@ class SettingsPageState extends State<SettingsPage> {
 
         _sectionTitle("数据管理", indent: !isDesktopDevice),
         const SizedBox(height: 10),
+        ListTile(
+          title: const Text("常用信息"),
+          subtitle: const Text("填写账户时可一键填入"),
+          leading: const Icon(Icons.bookmark_outline),
+          enabled: _hasDb,
+          onTap: _hasDb ? () => showPresetManagerPage(context) : null,
+        ),
         ListTile(
           title: const Text("云端 WebDAV 配置"),
           subtitle: Text(_hasDb ? "已解锁，可配置云备份凭据" : "请先初始化保险箱"),
