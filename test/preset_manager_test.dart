@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:20
- * @LastEditTime: 2026-10-14 00:05:06
+ * @LastEditTime: 2026-10-14 23:46:06
  * @Description: 常用信息管理页测试
  */
 
@@ -86,8 +86,8 @@ void main() {
     await tester.pumpWidget(app());
     await settleIo(tester);
 
-    expect(find.text('空空如也？'), findsOneWidget);
-    expect(find.text("点击右上角'+'号，新建用于快捷填入账户字段的常用信息"), findsOneWidget);
+    expect(find.text('新建常用信息'), findsOneWidget);
+    expect(find.text("仅用于快捷填入账户字段，点击右上角'+'号新建"), findsOneWidget);
   });
 
   testWidgets('列表展示条目, 密码默认掩码', (tester) async {
@@ -160,7 +160,7 @@ void main() {
 
     expect(find.text('已填入账户中的内容不受影响。'), findsNothing); // 确认框已关闭
     expect(find.text('Gmail_1'), findsNothing);
-    expect(find.text('空空如也？'), findsOneWidget);
+    expect(find.text('新建常用信息'), findsOneWidget);
   });
 
   testWidgets('新建弹层: 名称为空时提示且不落库', (tester) async {
@@ -195,7 +195,7 @@ void main() {
   });
 
   testWidgets('新建弹层: 仅选中密码类型时给出红字提醒', (tester) async {
-    const String warning = "尽管提供了此功能，但仍不建议将密码保存为常用信息";
+    const String warning = "尽管应用允许将密码添加为常用信息，但仍不建议这么做";
 
     await tester.pumpWidget(app());
     await settleIo(tester);
