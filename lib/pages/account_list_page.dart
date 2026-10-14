@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-12 22:00:56
- * @LastEditTime: 2026-10-06 16:17:44
+ * @LastEditTime: 2026-10-15 00:11:01
  * @Description: 账户信息页(查看页)
  */
 
@@ -535,7 +535,7 @@ class AccountListPageState extends State<AccountListPage> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           Icon(
-            noStar ? Icons.bookmark_border : Icons.search_off,
+            noStar ? Icons.star_border_rounded : Icons.search_off,
             size: 56,
             color: Theme.of(context).colorScheme.outline,
           ),
@@ -876,8 +876,8 @@ class AccountListPageState extends State<AccountListPage> {
                               onPressed: _toggleFavoritesOnly,
                               icon: Icon(
                                 _favoritesOnly
-                                    ? Icons.bookmark
-                                    : Icons.bookmark_border,
+                                    ? Icons.star_rounded
+                                    : Icons.star_border_rounded,
                                 color: _favoritesOnly
                                     ? Theme.of(context).colorScheme.primary
                                     : Theme.of(

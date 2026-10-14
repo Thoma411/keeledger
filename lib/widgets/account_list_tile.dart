@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-10 00:00:25
- * @LastEditTime: 2026-09-23 23:17:58
+ * @LastEditTime: 2026-10-15 00:11:56
  * @Description: 经典样式账户列表
  */
 
@@ -138,7 +138,7 @@ class _AccountListTileState extends State<AccountListTile> {
               onPressed: widget.onToggleFavorite,
               visualDensity: VisualDensity.compact,
               icon: Icon(
-                acc.favorite ? Icons.bookmark : Icons.bookmark_border,
+                acc.favorite ? Icons.star_rounded : Icons.star_border_rounded,
                 size: 20,
                 color: acc.favorite
                     ? cs.primary

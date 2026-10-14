@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-10-09 22:36:23
+ * @LastEditTime: 2026-10-15 00:11:47
  * @Description: 账户信息详情页
  */
 
@@ -232,7 +232,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
           IconButton(
             onPressed: _toggleFavorite,
             icon: Icon(
-              _favorite ? Icons.bookmark : Icons.bookmark_border,
+              _favorite ? Icons.star_rounded : Icons.star_border_rounded,
               color: _favorite
                   ? Theme.of(context).colorScheme.primary
                   : Theme.of(context).colorScheme.onSurfaceVariant,
@@ -768,7 +768,9 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                   IconButton(
                     onPressed: _toggleFavorite,
                     icon: Icon(
-                      _favorite ? Icons.bookmark : Icons.bookmark_border,
+                      _favorite
+                          ? Icons.star_rounded
+                          : Icons.star_border_rounded,
                       color: _favorite
                           ? Theme.of(context).colorScheme.primary
                           : Theme.of(context).colorScheme.onSurfaceVariant,

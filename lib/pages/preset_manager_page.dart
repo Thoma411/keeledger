@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:01
- * @LastEditTime: 2026-10-14 01:25:32
+ * @LastEditTime: 2026-10-15 00:11:12
  * @Description: 常用信息管理页
  */
 
@@ -98,7 +98,7 @@ class _PresetManagerPageState extends State<PresetManagerPage> {
         mainAxisSize: MainAxisSize.min,
         children: [
           Icon(
-            Icons.bookmark_border,
+            Icons.bookmark_outline,
             size: 64,
             color: cs.onSurfaceVariant.withValues(alpha: 0.4),
           ),
