@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:20
- * @LastEditTime: 2026-10-14 23:46:06
+ * @LastEditTime: 2026-10-15 21:11:36
  * @Description: 常用信息管理页测试
  */
 
@@ -195,7 +195,7 @@ void main() {
   });
 
   testWidgets('新建弹层: 仅选中密码类型时给出红字提醒', (tester) async {
-    const String warning = "尽管应用允许将密码添加为常用信息，但仍不建议这么做";
+    const String warning = "尽管应用允许将密码添加为常用信息，但仍不建议这么做。";
 
     await tester.pumpWidget(app());
     await settleIo(tester);
@@ -210,5 +210,61 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text(warning), findsOneWidget);
+  });
+
+  // 手机类型的公共步骤: 填名称 -> 选手机 -> 填内容
+  Future<void> fillPhoneForm(WidgetTester tester, String value) async {
+    await tester.pumpWidget(app());
+    await settleIo(tester);
+
+    await tester.tap(find.byTooltip('新建'));
+    await tester.pumpAndSettle();
+
+    await tester.enterText(find.byType(TextField).first, '我的手机');
+    await tester.tap(find.byType(DropdownButtonFormField<PresetKind>));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('绑定手机').last);
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, value);
+  }
+
+  testWidgets('新建弹层: 手机类型会展示格式说明', (tester) async {
+    await fillPhoneForm(tester, '13800138000');
+
+    expect(find.text('一个合法的手机号应当仅包含数字，且不超过 11 位。'), findsOneWidget);
+  });
+
+  testWidgets('新建弹层: 手机号超过 11 位时阻止保存', (tester) async {
+    await fillPhoneForm(tester, '8613800138000'); // 13 位纯数字(带区号)
+
+    await tester.tap(find.text('保存'));
+    await tester.pump();
+    expect(find.text('输入不合法'), findsOneWidget);
+
+    // 走完悬浮提示的停留与淡出, 避免残留定时器
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('新建弹层: 手机号含非法字符时阻止保存(即使不超过 11 位)', (tester) async {
+    await fillPhoneForm(tester, '138abc00123'); // 11 位但含字母
+
+    await tester.tap(find.text('保存'));
+    await tester.pump();
+    expect(find.text('输入不合法'), findsOneWidget);
+
+    // 走完悬浮提示的停留与淡出, 避免残留定时器
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
+  });
+
+  testWidgets('新建弹层: 手机号 11 位数字可保存, 且去除首尾空格', (tester) async {
+    await fillPhoneForm(tester, '  13800138000  ');
+
+    await tester.tap(find.text('保存'));
+    await tester.pump();
+    await settleIo(tester);
+
+    expect(find.text('13800138000'), findsOneWidget); // 列表里不带空格
   });
 }

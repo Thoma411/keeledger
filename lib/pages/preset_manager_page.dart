@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:01
- * @LastEditTime: 2026-10-15 00:11:12
+ * @LastEditTime: 2026-10-15 21:10:02
  * @Description: 常用信息管理页
  */
 
@@ -187,12 +187,26 @@ class _PresetCreateDialogState extends State<_PresetCreateDialog> {
     final String name = _nameController.text.trim();
     if (name.isEmpty) return "请填写名称";
     if (_kind == null) return "请选择类型";
-    if (_valueController.text.isEmpty) return "请填写内容";
+    final String value = _valueController.text;
+    if (value.isEmpty) return "请填写内容";
+    if (_kind == PresetKind.phone) {
+      final String phone = value.trim();
+      final bool invalid =
+          !RegExp(r'^[0-9]+$').hasMatch(phone) || phone.length > 11;
+      if (invalid) return "输入不合法";
+    }
     if (await StorageService().isPresetNameExists(name)) {
       return "名称 '$name' 已存在";
     }
     return null;
   }
+
+  // 不同kind的输入提示
+  String? get _kindHint => switch (_kind) {
+    PresetKind.phone => "一个合法的手机号应当仅包含数字，且不超过 11 位。",
+    PresetKind.password => "尽管应用允许将密码添加为常用信息，但仍不建议这么做。",
+    _ => null,
+  };
 
   // 保存常用信息
   Future<void> _save() async {
@@ -217,6 +231,7 @@ class _PresetCreateDialogState extends State<_PresetCreateDialog> {
 
   @override
   Widget build(BuildContext context) {
+    final String? kindHint = _kindHint;
     return AlertDialog(
       title: const Text("新建常用信息"),
       content: SingleChildScrollView(
@@ -272,13 +287,15 @@ class _PresetCreateDialogState extends State<_PresetCreateDialog> {
                   ),
                 ),
               ),
-              if (_isPassword) ...[
+              if (kindHint != null) ...[
                 const SizedBox(height: 12),
                 Text(
-                  "尽管应用允许将密码添加为常用信息，但仍不建议这么做",
+                  kindHint,
                   style: TextStyle(
                     fontSize: AppText.caption,
-                    color: Theme.of(context).colorScheme.error,
+                    color: _isPassword
+                        ? Theme.of(context).colorScheme.error
+                        : Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                 ),
               ],

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-09 22:58:20
- * @LastEditTime: 2026-10-09 23:14:20
+ * @LastEditTime: 2026-10-15 21:44:43
  * @Description: 常用信息实体定义
  */
 
@@ -24,6 +24,10 @@ enum PresetKind {
       values.firstWhere((k) => k.code == code, orElse: () => nickname);
 }
 
+// 内容规范化(除密码外去除首尾空格)
+String _normalizeValue(PresetKind kind, String value) =>
+    kind == PresetKind.password ? value : value.trim();
+
 class Preset {
   final String id;
   String name; // 名称(简称)
@@ -35,9 +39,10 @@ class Preset {
     required this.id,
     required String name,
     required this.kind,
-    required this.value,
+    required String value,
     required this.lastModified,
-  }) : name = name.trim();
+  }) : name = name.trim(),
+       value = _normalizeValue(kind, value);
 
   // 转换为数据库存储的Map
   Map<String, dynamic> toMap() {

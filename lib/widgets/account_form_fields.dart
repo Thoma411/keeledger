@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-15 18:29:32
+ * @LastEditTime: 2026-10-15 20:56:29
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -93,10 +93,12 @@ List<Preset> presetCandidates(List<Preset> presets, PresetKind? kind) =>
 
 // 填入内容
 void applyPreset(TextEditingController controller, Preset preset) {
-  // 只剔除非数字, 不截断
-  final String value = (preset.kind == PresetKind.phone)
-      ? preset.value.replaceAll(RegExp(r'[^0-9]'), '')
-      : preset.value;
+  String value = preset.value;
+  if (preset.kind == PresetKind.phone) {
+    // 只留数字并限11位
+    value = value.replaceAll(RegExp(r'[^0-9]'), '');
+    if (value.length > 11) value = value.substring(0, 11);
+  }
   controller.text = value;
   controller.selection = TextSelection.collapsed(offset: value.length); // 光标置末尾
 }

@@ -51,8 +51,23 @@ void main() {
       expect(map['kind'], 'email');
       expect(map['value'], isNot('xxx1@gmail.com')); // 内容已加密
       expect(map['value'].toString(), startsWith('v2:'));
-      // 内容原样保留(密码可能含前后空格), 名称才去空白
-      expect(Preset.fromMap(map).value, '  xxx1@gmail.com  ');
+      // 非密码类型: 内容首尾空白一并去掉
+      expect(Preset.fromMap(map).value, 'xxx1@gmail.com');
+    });
+
+    test('内容规范: 密码保留首尾空白, 其余类型去除', () {
+      Preset make(PresetKind kind) => Preset(
+        id: 'p1',
+        name: '  待清理  ',
+        kind: kind,
+        value: '  13800138000  ',
+        lastModified: '2026-10-09T10:00:00',
+      );
+
+      expect(make(PresetKind.password).value, '  13800138000  '); // 密码原样
+      expect(make(PresetKind.phone).value, '13800138000');
+      expect(make(PresetKind.email).value, '13800138000');
+      expect(make(PresetKind.phone).name, '待清理'); // 名称一律去空白
     });
 
     test('fromMap 还原明文内容与类型', () {

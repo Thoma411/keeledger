@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-15 00:33:12
- * @LastEditTime: 2026-10-15 00:43:18
+ * @LastEditTime: 2026-10-15 20:57:50
  * @Description: 字段级常用信息快捷填入测试
  */
 
@@ -163,7 +163,7 @@ void main() {
     expect(find.byIcon(Icons.expand_more), findsNothing);
   });
 
-  testWidgets('手机号填入时剔除非数字(不截断)', (tester) async {
+  testWidgets('手机号填入时剔除非数字, 超过 11 位截断', (tester) async {
     final controller = TextEditingController();
     addTearDown(controller.dispose);
 
@@ -181,6 +181,26 @@ void main() {
     await tester.pump();
 
     expect(controller.text, '13800138000');
+  });
+
+  testWidgets('手机号超过 11 位时截断(兜底)', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      formRow(
+        controller: controller,
+        kind: PresetKind.phone,
+        presets: [preset('p1', '带区号', PresetKind.phone, '+8613800138000')],
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pump();
+    await tester.tap(find.text('带区号'));
+    await tester.pump();
+
+    expect(controller.text, '86138001380');
   });
 
   testWidgets('填入后光标停在末尾', (tester) async {
