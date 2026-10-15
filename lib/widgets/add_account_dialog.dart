@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-08-30 22:24:38
- * @LastEditTime: 2026-10-06 14:02:14
+ * @LastEditTime: 2026-10-15 18:07:50
  * @Description: 新建账户表单对话框
  */
 
@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/account.dart';
+import '../models/preset.dart';
 import '../services/storage_service.dart';
 import '../utils/utils.dart';
 import 'account_form_fields.dart';
@@ -56,6 +57,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
   bool _realName = false;
   bool _passwordVisible = false;
   List<String> _tags = [];
+  List<Preset> _presets = [];
 
   @override
   void initState() {
@@ -64,6 +66,14 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
     _tagsController.addListener(() {
       if (mounted) setState(() {});
     });
+    _loadPresets();
+  }
+
+  // 载入常用信息
+  Future<void> _loadPresets() async {
+    final list = await StorageService().getAllPresets();
+    if (!mounted) return;
+    setState(() => _presets = list);
   }
 
   @override
@@ -221,6 +231,7 @@ class _AddAccountDialogState extends State<AddAccountDialog> {
       passwordVisible: _passwordVisible,
       onTogglePassword: () =>
           setState(() => _passwordVisible = !_passwordVisible),
+      presets: _presets,
     );
   }
 

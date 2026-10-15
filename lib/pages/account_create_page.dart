@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-05 17:22:39
- * @LastEditTime: 2026-10-06 16:18:18
+ * @LastEditTime: 2026-10-15 18:07:28
  * @Description: 新建账户页
  */
 
@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:uuid/uuid.dart';
 
 import '../models/account.dart';
+import '../models/preset.dart';
 import '../services/storage_service.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
@@ -56,6 +57,7 @@ class _AccountCreatePageState extends State<AccountCreatePage> {
   bool _realName = false;
   bool _passwordVisible = false;
   List<String> _tags = [];
+  List<Preset> _presets = [];
 
   @override
   void initState() {
@@ -64,6 +66,14 @@ class _AccountCreatePageState extends State<AccountCreatePage> {
     _tagsController.addListener(() {
       if (mounted) setState(() {});
     });
+    _loadPresets();
+  }
+
+  // 载入常用信息
+  Future<void> _loadPresets() async {
+    final list = await StorageService().getAllPresets();
+    if (!mounted) return;
+    setState(() => _presets = list);
   }
 
   @override
@@ -222,6 +232,7 @@ class _AccountCreatePageState extends State<AccountCreatePage> {
           passwordVisible: _passwordVisible,
           onTogglePassword: () =>
               setState(() => _passwordVisible = !_passwordVisible),
+          presets: _presets,
         ),
       ],
     );

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-09 22:36:31
+ * @LastEditTime: 2026-10-15 18:29:32
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -9,6 +9,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 
+import '../models/preset.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
 
@@ -86,11 +87,127 @@ List<String>? appendTag(
   return [...tags, tag];
 }
 
+// 取某类型的候选(已排序)
+List<Preset> presetCandidates(List<Preset> presets, PresetKind? kind) =>
+    (kind == null) ? const [] : presets.where((p) => p.kind == kind).toList();
+
+// 填入内容
+void applyPreset(TextEditingController controller, Preset preset) {
+  // 只剔除非数字, 不截断
+  final String value = (preset.kind == PresetKind.phone)
+      ? preset.value.replaceAll(RegExp(r'[^0-9]'), '')
+      : preset.value;
+  controller.text = value;
+  controller.selection = TextSelection.collapsed(offset: value.length); // 光标置末尾
+}
+
+// 候选胶囊
+class PresetChips extends StatelessWidget {
+  final List<Preset> presets;
+  final ValueChanged<Preset> onPick;
+  const PresetChips({super.key, required this.presets, required this.onPick});
+
+  @override
+  Widget build(BuildContext context) {
+    final cs = Theme.of(context).colorScheme;
+    return Padding(
+      padding: const EdgeInsets.only(top: 8),
+      child: Wrap(
+        spacing: 8,
+        runSpacing: 8,
+        children: [
+          for (final p in presets)
+            ActionChip(
+              label: Text(
+                p.name,
+                style: TextStyle(fontSize: AppText.label, color: cs.primary),
+              ),
+              onPressed: () => onPick(p),
+              backgroundColor: cs.primary.withValues(alpha: 0.05),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+// 字段行共用的快捷填入状态
+mixin PresetFillMixin<T extends StatefulWidget> on State<T> {
+  TextEditingController get presetFillController;
+  List<Preset> get presetFillCandidates;
+
+  // 是否处于可填入场景
+  bool get presetFillEnabled => true;
+  bool _expanded = false;
+  bool _showFill = false;
+  bool get _canFill =>
+      presetFillEnabled &&
+      presetFillCandidates.isNotEmpty &&
+      presetFillController.text.isEmpty;
+
+  @override
+  void initState() {
+    super.initState();
+    presetFillController.addListener(_onTextChanged);
+    _showFill = _canFill;
+  }
+
+  @override
+  void dispose() {
+    presetFillController.removeListener(_onTextChanged);
+    super.dispose();
+  }
+
+  @override
+  void didUpdateWidget(T oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    _showFill = _canFill;
+    if (!_showFill) _expanded = false; // 入口消失时收起已展开的胶囊
+  }
+
+  // 只在入口可见性变化时重建
+  void _onTextChanged() {
+    if (!mounted) return;
+    final bool canFill = _canFill;
+    if (canFill == _showFill) return;
+    setState(() {
+      _showFill = canFill;
+      if (!canFill) _expanded = false;
+    });
+  }
+
+  // 右侧入口
+  Widget? suffixFillButton(BuildContext context) {
+    if (!_showFill) return null;
+    return compactSuffixIcon(
+      Icon(
+        Icons.expand_more,
+        size: 18,
+        color: Theme.of(context).colorScheme.primary,
+      ),
+      () => setState(() => _expanded = !_expanded),
+    );
+  }
+
+  // 下方候选胶囊
+  Widget? fillChips(BuildContext context) {
+    if (!_expanded) return null;
+    return PresetChips(
+      presets: presetFillCandidates,
+      onPick: (preset) {
+        applyPreset(presetFillController, preset);
+        setState(() => _expanded = false);
+      },
+    );
+  }
+}
+
 // 新建账户p1-必填字段
 class AccountRequiredFields extends StatelessWidget {
   final TextEditingController platform, name, userId, pswd, email, phone;
   final bool passwordVisible;
   final VoidCallback onTogglePassword;
+  final List<Preset> presets; // 常用信息
 
   const AccountRequiredFields({
     super.key,
@@ -102,6 +219,7 @@ class AccountRequiredFields extends StatelessWidget {
     required this.phone,
     required this.passwordVisible,
     required this.onTogglePassword,
+    this.presets = const [],
   });
 
   @override
@@ -122,6 +240,8 @@ class AccountRequiredFields extends StatelessWidget {
           controller: name,
           isEditing: true,
           floatingLabel: true,
+          presetKind: PresetKind.nickname,
+          presets: presets,
         ),
         AccountFieldRow(
           label: "用户ID",
@@ -135,18 +255,24 @@ class AccountRequiredFields extends StatelessWidget {
           isVisible: passwordVisible,
           onToggleVisible: onTogglePassword,
           floatingLabel: true,
+          presetKind: PresetKind.password,
+          presets: presets,
         ),
         AccountFieldRow(
           label: "绑定邮箱",
           controller: email,
           isEditing: true,
           floatingLabel: true,
+          presetKind: PresetKind.email,
+          presets: presets,
         ),
         AccountFieldRow(
           label: "绑定手机",
           controller: phone,
           isEditing: true,
           floatingLabel: true,
+          presetKind: PresetKind.phone,
+          presets: presets,
           inputFormatters: [
             FilteringTextInputFormatter.digitsOnly,
             LengthLimitingTextInputFormatter(11),
@@ -292,7 +418,7 @@ class FieldHint extends StatelessWidget {
 }
 
 // 单行字段: 标签+只读值/输入框
-class AccountFieldRow extends StatelessWidget {
+class AccountFieldRow extends StatefulWidget {
   final String label;
   final TextEditingController controller;
   final bool isEditing;
@@ -301,6 +427,8 @@ class AccountFieldRow extends StatelessWidget {
   final bool floatingLabel;
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
+  final PresetKind? presetKind; // 需要快捷填入时传入类型
+  final List<Preset> presets; // 常用信息
 
   const AccountFieldRow({
     super.key,
@@ -311,31 +439,56 @@ class AccountFieldRow extends StatelessWidget {
     this.floatingLabel = false,
     this.maxLines = 1,
     this.inputFormatters,
+    this.presetKind,
+    this.presets = const [],
   });
 
   @override
+  State<AccountFieldRow> createState() => _AccountFieldRowState();
+}
+
+class _AccountFieldRowState extends State<AccountFieldRow>
+    with PresetFillMixin<AccountFieldRow> {
+  @override
+  TextEditingController get presetFillController => widget.controller;
+
+  @override
+  List<Preset> get presetFillCandidates =>
+      presetCandidates(widget.presets, widget.presetKind);
+
+  @override
+  bool get presetFillEnabled => widget.isEditing;
+
+  @override
   Widget build(BuildContext context) {
-    final bool isMultiline = maxLines > 1;
+    final bool isMultiline = widget.maxLines > 1;
+    final Widget? chips = fillChips(context);
     // 录入样式
-    if (floatingLabel) {
+    if (widget.floatingLabel) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
-        child: TextFormField(
-          controller: controller,
-          maxLines: maxLines,
-          minLines: isMultiline ? 1 : null,
-          inputFormatters: _formatters,
-          style: const TextStyle(
-            fontSize: AppText.body,
-            fontWeight: FontWeight.w500,
-          ),
-          decoration: InputDecoration(
-            labelText: label,
-            isDense: true,
-            alignLabelWithHint: isMultiline,
-            suffixIcon: isDateField ? _dateButton(context, controller) : null,
-            suffixIconConstraints: _suffixIconConstraints,
-          ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: widget.controller,
+              maxLines: widget.maxLines,
+              minLines: isMultiline ? 1 : null,
+              inputFormatters: _formatters,
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontWeight: FontWeight.w500,
+              ),
+              decoration: InputDecoration(
+                labelText: widget.label,
+                isDense: true,
+                alignLabelWithHint: isMultiline,
+                suffixIcon: _buildSuffix(context),
+                suffixIconConstraints: _suffixIconConstraints,
+              ),
+            ),
+            ?chips,
+          ],
         ),
       );
     }
@@ -344,12 +497,12 @@ class AccountFieldRow extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          fieldLabel(context, label),
+          fieldLabel(context, widget.label),
           const SizedBox(height: 4),
-          if (!isEditing)
+          if (!widget.isEditing)
             readOnlyFieldValue(
               context,
-              controller.text.isEmpty ? "-" : controller.text,
+              widget.controller.text.isEmpty ? "-" : widget.controller.text,
               style: const TextStyle(
                 fontSize: AppText.body,
                 fontWeight: FontWeight.w500,
@@ -358,8 +511,8 @@ class AccountFieldRow extends StatelessWidget {
             )
           else
             TextFormField(
-              controller: controller,
-              maxLines: maxLines,
+              controller: widget.controller,
+              maxLines: widget.maxLines,
               // 行数随内容增长
               minLines: isMultiline ? 1 : null,
               inputFormatters: _formatters,
@@ -369,23 +522,34 @@ class AccountFieldRow extends StatelessWidget {
               ),
               decoration: accountFieldDecoration(
                 context,
-                suffixIcon: isDateField
-                    ? _dateButton(context, controller)
-                    : null,
+                suffixIcon: _buildSuffix(context),
               ),
             ),
+          ?chips,
         ],
       ),
     );
   }
 
+  // 后缀图标
+  Widget? _buildSuffix(BuildContext context) {
+    final Widget? fill = suffixFillButton(context);
+    final List<Widget> buttons = [
+      ?fill,
+      if (widget.isDateField) _dateButton(context, widget.controller),
+    ];
+    if (buttons.isEmpty) return null;
+    if (buttons.length == 1) return buttons.first;
+    return Row(mainAxisSize: MainAxisSize.min, children: buttons);
+  }
+
   // 日期字段限制可输入字符
-  List<TextInputFormatter>? get _formatters => isDateField
+  List<TextInputFormatter>? get _formatters => widget.isDateField
       ? [
           FilteringTextInputFormatter.allow(RegExp(r'[0-9\-./]')),
           LengthLimitingTextInputFormatter(10),
         ]
-      : inputFormatters;
+      : widget.inputFormatters;
 
   // 日期选择按钮
   Widget _dateButton(BuildContext context, TextEditingController controller) {
@@ -443,13 +607,15 @@ Future<void> _pickDate(
 }
 
 // 密码行
-class AccountPasswordRow extends StatelessWidget {
+class AccountPasswordRow extends StatefulWidget {
   final TextEditingController controller;
   final bool isEditing;
   final bool isVisible;
   final VoidCallback onToggleVisible;
   // true=录入样式
   final bool floatingLabel;
+  final PresetKind? presetKind; // 需要快捷填入时传入类型
+  final List<Preset> presets;
 
   const AccountPasswordRow({
     super.key,
@@ -458,36 +624,70 @@ class AccountPasswordRow extends StatelessWidget {
     required this.isVisible,
     required this.onToggleVisible,
     this.floatingLabel = false,
+    this.presetKind,
+    this.presets = const [],
   });
 
   @override
+  State<AccountPasswordRow> createState() => _AccountPasswordRowState();
+}
+
+class _AccountPasswordRowState extends State<AccountPasswordRow>
+    with PresetFillMixin<AccountPasswordRow> {
+  @override
+  TextEditingController get presetFillController => widget.controller;
+
+  @override
+  List<Preset> get presetFillCandidates =>
+      presetCandidates(widget.presets, widget.presetKind);
+
+  @override
+  bool get presetFillEnabled => widget.isEditing;
+
+  // 显示/隐藏切换按钮
+  Widget _eyeButton() => compactSuffixIcon(
+    Icon(widget.isVisible ? Icons.visibility : Icons.visibility_off, size: 18),
+    widget.onToggleVisible,
+  );
+
+  @override
   Widget build(BuildContext context) {
+    final Widget? chips = fillChips(context);
     // 录入样式
-    if (floatingLabel) {
+    if (widget.floatingLabel) {
+      final Widget? fill = suffixFillButton(context);
+      final Widget eye = _eyeButton();
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
-        child: TextFormField(
-          controller: controller,
-          obscureText: !isVisible,
-          style: const TextStyle(
-            fontSize: AppText.body,
-            fontFamily: 'Consolas',
-          ),
-          decoration: InputDecoration(
-            labelText: "密码",
-            isDense: true,
-            suffixIcon: compactSuffixIcon(
-              Icon(
-                isVisible ? Icons.visibility : Icons.visibility_off,
-                size: 18,
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            TextFormField(
+              controller: widget.controller,
+              obscureText: !widget.isVisible,
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontFamily: 'Consolas',
               ),
-              onToggleVisible,
+              decoration: InputDecoration(
+                labelText: "密码",
+                isDense: true,
+                suffixIcon: (fill == null)
+                    ? eye
+                    : Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [fill, eye],
+                      ),
+                suffixIconConstraints: _suffixIconConstraints,
+              ),
             ),
-            suffixIconConstraints: _suffixIconConstraints,
-          ),
+            ?chips,
+          ],
         ),
       );
     }
+    // 快捷填入入口仅编辑态出现
+    final Widget? fill = suffixFillButton(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -498,11 +698,11 @@ class AccountPasswordRow extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: isEditing
+                child: widget.isEditing
                     ? TextFormField(
-                        controller: controller,
+                        controller: widget.controller,
                         // 闭眼时输入框也是遮蔽状态
-                        obscureText: !isVisible,
+                        obscureText: !widget.isVisible,
                         style: const TextStyle(
                           fontSize: AppText.body,
                           fontFamily: 'Consolas',
@@ -513,7 +713,7 @@ class AccountPasswordRow extends StatelessWidget {
                         ),
                       )
                     : Text(
-                        isVisible ? controller.text : "••••••••",
+                        widget.isVisible ? widget.controller.text : "••••••••",
                         style: const TextStyle(
                           fontSize: AppText.body,
                           fontWeight: FontWeight.w500,
@@ -521,15 +721,16 @@ class AccountPasswordRow extends StatelessWidget {
                         ),
                       ),
               ),
+              ?fill,
               IconButton(
                 icon: Icon(
-                  isVisible ? Icons.visibility : Icons.visibility_off,
+                  widget.isVisible ? Icons.visibility : Icons.visibility_off,
                   size: 18,
                 ),
-                onPressed: onToggleVisible,
+                onPressed: widget.onToggleVisible,
               ),
               // 复制按钮仅只读态显示
-              if (!isEditing)
+              if (!widget.isEditing)
                 IconButton(
                   icon: Icon(
                     Icons.copy_all_rounded,
@@ -537,12 +738,15 @@ class AccountPasswordRow extends StatelessWidget {
                     color: Theme.of(context).colorScheme.onSurfaceVariant,
                   ),
                   onPressed: () {
-                    Clipboard.setData(ClipboardData(text: controller.text));
+                    Clipboard.setData(
+                      ClipboardData(text: widget.controller.text),
+                    );
                     MessageUtil.show(context, "密码已复制");
                   },
                 ),
             ],
           ),
+          ?chips,
         ],
       ),
     );

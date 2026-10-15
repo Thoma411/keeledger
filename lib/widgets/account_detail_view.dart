@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-10-15 00:11:47
+ * @LastEditTime: 2026-10-15 18:08:36
  * @Description: 账户信息详情页
  */
 
@@ -12,6 +12,7 @@ import 'package:url_launcher/url_launcher.dart';
 import 'package:flutter/foundation.dart';
 
 import '../models/account.dart';
+import '../models/preset.dart';
 import '../services/icon_store.dart';
 import '../services/storage_service.dart';
 import '../utils/app_text.dart';
@@ -57,6 +58,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       _signupDateController,
       _tagsController;
   bool _isEditing = false; // 是否正在编辑
+  List<Preset> _presets = []; // 常用信息
 
   int _currentStatus = 1;
   bool _currentRealName = false;
@@ -344,6 +346,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
     bool isDateField = false,
     int maxLines = 1,
     List<TextInputFormatter>? inputFormatters,
+    PresetKind? presetKind,
   }) {
     return AccountFieldRow(
       label: label,
@@ -352,7 +355,16 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       isDateField: isDateField,
       maxLines: maxLines,
       inputFormatters: inputFormatters,
+      presetKind: presetKind,
+      presets: _presets,
     );
+  }
+
+  // 载入常用信息(进入编辑态时刷新)
+  Future<void> _loadPresets() async {
+    final list = await StorageService().getAllPresets();
+    if (!mounted) return;
+    setState(() => _presets = list);
   }
 
   // 构建带跳转功能的展示行
@@ -535,6 +547,7 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       }
     } else {
       setState(() => _isEditing = true); // 切换到编辑状态
+      _loadPresets(); // 进入编辑态时刷新常用信息
     }
   }
 
@@ -789,12 +802,21 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       const Divider(),
                     ],
                     // 分组1: 核心凭据
-                    _buildEditableInfoRow("用户昵称", _nameController),
+                    _buildEditableInfoRow(
+                      "用户昵称",
+                      _nameController,
+                      presetKind: PresetKind.nickname,
+                    ),
                     _buildEditableInfoRow("用户ID", _userIdController),
-                    _buildEditableInfoRow("绑定邮箱", _emailController),
+                    _buildEditableInfoRow(
+                      "绑定邮箱",
+                      _emailController,
+                      presetKind: PresetKind.email,
+                    ),
                     _buildEditableInfoRow(
                       "绑定手机",
                       _phoneController,
+                      presetKind: PresetKind.phone,
                       inputFormatters: [
                         FilteringTextInputFormatter.digitsOnly,
                         LengthLimitingTextInputFormatter(11),
@@ -807,6 +829,8 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                       onToggleVisible: () => setState(
                         () => _isPasswordVisible = !_isPasswordVisible,
                       ),
+                      presetKind: PresetKind.password,
+                      presets: _presets,
                     ),
                     const Divider(),
                     // 分组2: 平台与标记
@@ -849,12 +873,21 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                 padding: const EdgeInsets.all(16),
                 children: [
                   // 分组1: 核心凭据
-                  _buildEditableInfoRow("用户昵称", _nameController),
+                  _buildEditableInfoRow(
+                    "用户昵称",
+                    _nameController,
+                    presetKind: PresetKind.nickname,
+                  ),
                   _buildEditableInfoRow("用户ID", _userIdController),
-                  _buildEditableInfoRow("绑定邮箱", _emailController),
+                  _buildEditableInfoRow(
+                    "绑定邮箱",
+                    _emailController,
+                    presetKind: PresetKind.email,
+                  ),
                   _buildEditableInfoRow(
                     "绑定手机",
                     _phoneController,
+                    presetKind: PresetKind.phone,
                     inputFormatters: [
                       FilteringTextInputFormatter.digitsOnly,
                       LengthLimitingTextInputFormatter(11),
@@ -867,6 +900,8 @@ class _AccountDetailViewState extends State<AccountDetailView> {
                     onToggleVisible: () => setState(
                       () => _isPasswordVisible = !_isPasswordVisible,
                     ),
+                    presetKind: PresetKind.password,
+                    presets: _presets,
                   ),
                   const Divider(),
                   // 分组2: 平台与标记
