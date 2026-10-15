@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:01
- * @LastEditTime: 2026-10-15 21:10:02
+ * @LastEditTime: 2026-10-15 23:50:19
  * @Description: 常用信息管理页
  */
 
@@ -60,11 +60,24 @@ class _PresetManagerPageState extends State<PresetManagerPage> {
     );
   }
 
+  // 各类型已有条数
+  Map<PresetKind, int> _countByKind() {
+    final Map<PresetKind, int> counts = {};
+    for (final Preset p in _presets) {
+      counts[p.kind] = (counts[p.kind] ?? 0) + 1;
+    }
+    return counts;
+  }
+
   // 新建
   Future<void> _create() async {
+    if (_presets.length >= Preset.maxPerKind * PresetKind.values.length) {
+      MessageUtil.show(context, "已达条数上限", isError: true);
+      return;
+    }
     final bool? created = await showDialog<bool>(
       context: context,
-      builder: (_) => const _PresetCreateDialog(),
+      builder: (_) => _PresetCreateDialog(counts: _countByKind()),
     );
     if (created != true || !mounted) return;
     await _reload();
@@ -162,7 +175,8 @@ class _PresetManagerPageState extends State<PresetManagerPage> {
 
 // 新建常用信息弹层
 class _PresetCreateDialog extends StatefulWidget {
-  const _PresetCreateDialog();
+  final Map<PresetKind, int> counts; // 各类型已有条数
+  const _PresetCreateDialog({required this.counts});
 
   @override
   State<_PresetCreateDialog> createState() => _PresetCreateDialogState();
@@ -182,14 +196,21 @@ class _PresetCreateDialogState extends State<_PresetCreateDialog> {
     super.dispose();
   }
 
+  // 该类型是否已达上限
+  bool _isFull(PresetKind kind) =>
+      (widget.counts[kind] ?? 0) >= Preset.maxPerKind;
+
   // 输入框填写校验
   Future<String?> _validate() async {
     final String name = _nameController.text.trim();
     if (name.isEmpty) return "请填写名称";
-    if (_kind == null) return "请选择类型";
+    final PresetKind? kind = _kind;
+    if (kind == null) return "请选择类型";
+    if (_isFull(kind)) return "「${kind.label}」已达条数上限";
+
     final String value = _valueController.text;
     if (value.isEmpty) return "请填写内容";
-    if (_kind == PresetKind.phone) {
+    if (kind == PresetKind.phone) {
       final String phone = value.trim();
       final bool invalid =
           !RegExp(r'^[0-9]+$').hasMatch(phone) || phone.length > 11;
@@ -258,7 +279,11 @@ class _PresetCreateDialogState extends State<_PresetCreateDialog> {
                 ),
                 items: [
                   for (final k in PresetKind.values)
-                    DropdownMenuItem(value: k, child: Text(k.label)),
+                    DropdownMenuItem(
+                      value: k,
+                      enabled: !_isFull(k), // 已满的类型不可选
+                      child: Text(_isFull(k) ? "${k.label}（已满）" : k.label),
+                    ),
                 ],
                 onChanged: (v) => setState(() => _kind = v),
               ),

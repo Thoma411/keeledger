@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-13 22:52:20
- * @LastEditTime: 2026-10-15 21:11:36
+ * @LastEditTime: 2026-10-15 23:39:30
  * @Description: 常用信息管理页测试
  */
 
@@ -266,5 +266,58 @@ void main() {
     await settleIo(tester);
 
     expect(find.text('13800138000'), findsOneWidget); // 列表里不带空格
+  });
+
+  testWidgets('每类数量上限: 已满的类型在下拉里标记已满且不可选', (tester) async {
+    for (int i = 0; i < Preset.maxPerKind; i++) {
+      await seed(tester, 'e$i', '邮箱$i', PresetKind.email, 'a$i@b.com');
+    }
+
+    await tester.pumpWidget(app());
+    await settleIo(tester);
+
+    await tester.tap(find.byTooltip('新建'));
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.byType(DropdownButtonFormField<PresetKind>));
+    await tester.pumpAndSettle();
+
+    expect(find.text('绑定邮箱（已满）'), findsOneWidget);
+
+    final List<DropdownMenuItem<PresetKind>> items = tester
+        .widgetList<DropdownMenuItem<PresetKind>>(
+          find.byType(DropdownMenuItem<PresetKind>),
+        )
+        .toList();
+    expect(items, hasLength(PresetKind.values.length));
+    expect(
+      items.firstWhere((i) => i.value == PresetKind.email).enabled,
+      isFalse,
+    );
+    expect(
+      items.firstWhere((i) => i.value == PresetKind.phone).enabled,
+      isTrue,
+    );
+  });
+
+  testWidgets('每类数量上限: 所有类型都满时不再打开新建弹层', (tester) async {
+    for (final PresetKind kind in PresetKind.values) {
+      for (int i = 0; i < Preset.maxPerKind; i++) {
+        await seed(tester, '${kind.code}$i', '${kind.label}$i', kind, 'v$i');
+      }
+    }
+
+    await tester.pumpWidget(app());
+    await settleIo(tester);
+
+    await tester.tap(find.byTooltip('新建'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('新建常用信息'), findsNothing); // 弹层没被打开
+    expect(find.text('已达条数上限'), findsOneWidget);
+
+    // 走完提示的停留, 避免残留定时器
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pumpAndSettle();
   });
 }

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-09 22:58:20
- * @LastEditTime: 2026-10-15 21:44:43
+ * @LastEditTime: 2026-10-15 23:33:09
  * @Description: 常用信息实体定义
  */
 
@@ -29,6 +29,7 @@ String _normalizeValue(PresetKind kind, String value) =>
     kind == PresetKind.password ? value : value.trim();
 
 class Preset {
+  static const int maxPerKind = 8; // 每类最大保存上限
   final String id;
   String name; // 名称(简称)
   PresetKind kind; // 类型
