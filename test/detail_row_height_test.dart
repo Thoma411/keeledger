@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-18 23:52:02
- * @LastEditTime: 2026-10-09 22:35:31
+ * @LastEditTime: 2026-10-17 18:00:07
  * @Description: 详情页信息行高度一致性回归测试
  */
 
@@ -82,11 +82,10 @@ void main() {
     return tester.getSize(row.first).height;
   }
 
-  // 密码行不参与"各行等高"断言: 其右侧显示/复制按钮是标准尺寸 IconButton(点击区 48),
-  // 行高会高于普通信息行(但它自身在只读/编辑两态间是一致的, 见下个用例)
-  const List<String> infoLabels = ['用户昵称', '用户ID', '绑定邮箱', '生日', '注册日期'];
+  // 密码行已改为样式B(图标收进 suffixIcon), 与普通信息行一样参与等高断言
+  const List<String> infoLabels = ['用户昵称', '用户ID', '绑定邮箱', '密码', '生日', '注册日期'];
 
-  testWidgets('详情页: 编辑态各行高度一致(含日期行)', (tester) async {
+  testWidgets('详情页: 编辑态各行高度一致(含密码行与日期行)', (tester) async {
     await pumpDetail(tester, buildAccount());
     await tester.tap(find.text('编辑账户'));
     await tester.pumpAndSettle();

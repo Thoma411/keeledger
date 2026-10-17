@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-17 17:44:41
+ * @LastEditTime: 2026-10-17 19:17:10
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -33,11 +33,7 @@ InputDecoration accountFieldDecoration(
     hintText: hint,
     suffixIcon: suffixIcon,
     // 限制图标栏尺寸防止后缀图标把该行撑高
-    suffixIconConstraints: const BoxConstraints(
-      minWidth: 32,
-      minHeight: 32,
-      maxHeight: 32,
-    ),
+    suffixIconConstraints: _denseSuffixIconConstraints,
     filled: !readOnly, // 只读态不铺底色
   );
 }
@@ -184,15 +180,16 @@ mixin PresetFillMixin<T extends StatefulWidget> on State<T> {
   }
 
   // 右侧入口
-  Widget? suffixFillButton(BuildContext context) {
+  Widget? suffixFillButton(BuildContext context, {bool dense = false}) {
     if (!_showFill) return null;
     return compactSuffixIcon(
       Icon(
         Icons.expand_more,
-        size: 18,
+        size: dense ? _denseIconSize : _normalIconSize,
         color: Theme.of(context).colorScheme.primary,
       ),
       () => setState(() => _expanded = !_expanded),
+      size: dense ? _denseIconButtonSize : _normalIconButtonSize,
     );
   }
 
@@ -430,7 +427,7 @@ class AccountFieldRow extends StatefulWidget {
   final TextEditingController controller;
   final bool isEditing;
   final bool isDateField;
-  // true=录入样式; false=展示样式
+  // true=编辑样式; false=只读样式
   final bool floatingLabel;
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
@@ -470,7 +467,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
   Widget build(BuildContext context) {
     final bool isMultiline = widget.maxLines > 1;
     final Widget? chips = fillChips(context);
-    // 录入样式
+    // 编辑样式
     if (widget.floatingLabel) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
@@ -490,7 +487,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
                 labelText: widget.label,
                 isDense: true,
                 alignLabelWithHint: isMultiline,
-                suffixIcon: _buildSuffix(context),
+                suffixIcon: _buildSuffix(context, dense: false),
                 suffixIconConstraints: _suffixIconConstraints,
               ),
             ),
@@ -529,7 +526,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
               ),
               decoration: accountFieldDecoration(
                 context,
-                suffixIcon: _buildSuffix(context),
+                suffixIcon: _buildSuffix(context, dense: true),
               ),
             ),
           ?chips,
@@ -539,11 +536,12 @@ class _AccountFieldRowState extends State<AccountFieldRow>
   }
 
   // 后缀图标
-  Widget? _buildSuffix(BuildContext context) {
-    final Widget? fill = suffixFillButton(context);
+  Widget? _buildSuffix(BuildContext context, {required bool dense}) {
+    final Widget? fill = suffixFillButton(context, dense: dense);
     final List<Widget> buttons = [
       ?fill,
-      if (widget.isDateField) _dateButton(context, widget.controller),
+      if (widget.isDateField)
+        _dateButton(context, widget.controller, dense: dense),
     ];
     if (buttons.isEmpty) return null;
     if (buttons.length == 1) return buttons.first;
@@ -559,31 +557,52 @@ class _AccountFieldRowState extends State<AccountFieldRow>
       : widget.inputFormatters;
 
   // 日期选择按钮
-  Widget _dateButton(BuildContext context, TextEditingController controller) {
+  Widget _dateButton(
+    BuildContext context,
+    TextEditingController controller, {
+    required bool dense,
+  }) {
     return compactSuffixIcon(
       Icon(
         Icons.calendar_today,
-        size: 16,
+        size: dense ? _denseIconSize : 16,
         color: Theme.of(context).colorScheme.primary,
       ),
       () => _pickDate(context, controller),
+      size: dense ? _denseIconButtonSize : _normalIconButtonSize,
     );
   }
 }
 
 // 后缀图标按钮
-Widget compactSuffixIcon(Widget icon, VoidCallback onPressed) {
+Widget compactSuffixIcon(
+  Widget icon,
+  VoidCallback onPressed, {
+  double size = _normalIconButtonSize,
+}) {
   return IconButton(
     icon: icon,
     onPressed: onPressed,
     padding: EdgeInsets.zero,
     style: IconButton.styleFrom(
-      minimumSize: const Size(32, 32),
+      minimumSize: Size.square(size),
       padding: EdgeInsets.zero,
       tapTargetSize: MaterialTapTargetSize.shrinkWrap,
     ),
   );
 }
+
+const double _normalIconButtonSize = 32; // 编辑样式按钮热区大小
+const double _normalIconSize = 18; // 编辑样式按钮大小
+const double _denseIconButtonSize = 36; // 只读样式图标热区大小
+const double _denseIconSize = 16; // 只读样式图标大小
+
+// 只读样式后缀图标位尺寸
+const BoxConstraints _denseSuffixIconConstraints = BoxConstraints(
+  minWidth: _denseIconButtonSize,
+  minHeight: _denseIconButtonSize,
+  maxHeight: _denseIconButtonSize,
+);
 
 // 后缀图标位尺寸
 const BoxConstraints _suffixIconConstraints = BoxConstraints(
@@ -619,7 +638,7 @@ class AccountPasswordRow extends StatefulWidget {
   final bool isEditing;
   final bool isVisible;
   final VoidCallback onToggleVisible;
-  // true=录入样式
+  // true=编辑样式; false=只读样式
   final bool floatingLabel;
   final PresetKind? presetKind; // 需要快捷填入时传入类型
   final List<Preset> presets;
@@ -652,30 +671,36 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
   bool get presetFillEnabled => widget.isEditing;
 
   // 显示/隐藏切换按钮
-  Widget _eyeButton() => compactSuffixIcon(
-    Icon(widget.isVisible ? Icons.visibility : Icons.visibility_off, size: 18),
+  Widget _eyeButton({required bool dense}) => compactSuffixIcon(
+    Icon(
+      widget.isVisible ? Icons.visibility : Icons.visibility_off,
+      size: dense ? _denseIconSize : _normalIconSize,
+    ),
     widget.onToggleVisible,
+    size: dense ? _denseIconButtonSize : _normalIconButtonSize,
   );
 
   // 复制按钮(仅只读态)
-  Widget _copyButton(BuildContext context) => compactSuffixIcon(
-    Icon(
-      Icons.copy_all_rounded,
-      size: 18,
-      color: Theme.of(context).colorScheme.onSurfaceVariant,
-    ),
-    () {
-      Clipboard.setData(ClipboardData(text: widget.controller.text));
-      MessageUtil.show(context, "密码已复制");
-    },
-  );
+  Widget _copyButton(BuildContext context, {required bool dense}) =>
+      compactSuffixIcon(
+        Icon(
+          Icons.copy_all_rounded,
+          size: dense ? _denseIconSize : _normalIconSize,
+          color: Theme.of(context).colorScheme.onSurfaceVariant,
+        ),
+        () {
+          Clipboard.setData(ClipboardData(text: widget.controller.text));
+          MessageUtil.show(context, "密码已复制");
+        },
+        size: dense ? _denseIconButtonSize : _normalIconButtonSize,
+      );
 
-  // 后缀图标(快捷填入/显示切换/复制)
-  Widget _buildSuffix(BuildContext context) {
+  // 后缀图标(快捷填入/复制 在左, 显示切换永远最右)
+  Widget _buildSuffix(BuildContext context, {required bool dense}) {
     final List<Widget> buttons = [
-      ?suffixFillButton(context),
-      _eyeButton(),
-      if (!widget.isEditing) _copyButton(context),
+      ?suffixFillButton(context, dense: dense),
+      if (!widget.isEditing) _copyButton(context, dense: dense),
+      _eyeButton(dense: dense),
     ];
     return buttons.length == 1
         ? buttons.first
@@ -685,10 +710,10 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
   @override
   Widget build(BuildContext context) {
     final Widget? chips = fillChips(context);
-    // 录入样式
+    // 编辑样式
     if (widget.floatingLabel) {
       final Widget? fill = suffixFillButton(context);
-      final Widget eye = _eyeButton();
+      final Widget eye = _eyeButton(dense: false);
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Column(
@@ -736,7 +761,7 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
                 fontFamily: 'Consolas',
               ),
               maxLines: 1,
-              suffixIcon: _buildSuffix(context),
+              suffixIcon: _buildSuffix(context, dense: true),
             )
           else
             TextFormField(
@@ -748,7 +773,7 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
               ),
               decoration: accountFieldDecoration(
                 context,
-                suffixIcon: _buildSuffix(context),
+                suffixIcon: _buildSuffix(context, dense: true),
               ),
             ),
           ?chips,

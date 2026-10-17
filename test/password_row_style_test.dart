@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-17 17:41:16
- * @LastEditTime: 2026-10-17 17:46:52
+ * @LastEditTime: 2026-10-17 19:16:34
  * @Description: 详情页密码行样式测试
  */
 
@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keeledger/widgets/account_form_fields.dart';
 
 void main() {
-  // 详情页(展示样式)的密码行
+  // 详情页(只读样式)的密码行
   Widget detailPasswordRow({
     required TextEditingController controller,
     required bool isEditing,
@@ -55,6 +55,10 @@ void main() {
     );
     // 编辑态不显示复制按钮
     expect(find.byIcon(Icons.copy_all_rounded), findsNothing);
+
+    // B 样式: 图标小一号(16)但热区 36, 不撑高行
+    expect(tester.getSize(find.byType(IconButton)).height, 36);
+    expect(tester.getSize(find.byIcon(Icons.visibility_off)).height, 16);
   });
 
   testWidgets('只读态: 掩码文案与眼睛/复制图标同在一个输入框内', (tester) async {
@@ -89,5 +93,17 @@ void main() {
     );
     expect(decorator.decoration.suffixIcon, isNotNull);
     expect(decorator.decoration.filled, isFalse); // 只读态不铺底色
+
+    // 眼睛 + 复制两个图标并排且不溢出
+    expect(find.byType(IconButton), findsNWidgets(2));
+    expect(tester.getSize(find.byType(IconButton).at(0)).height, 36);
+    expect(tester.getSize(find.byType(IconButton).at(1)).height, 36);
+
+    // 顺序与编辑态/新建页对齐: 眼睛永远在最右
+    final double copyX = tester
+        .getCenter(find.byIcon(Icons.copy_all_rounded))
+        .dx;
+    final double eyeX = tester.getCenter(find.byIcon(Icons.visibility_off)).dx;
+    expect(copyX, lessThan(eyeX), reason: '复制应在眼睛左侧');
   });
 }

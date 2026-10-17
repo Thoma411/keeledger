@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-15 00:33:12
- * @LastEditTime: 2026-10-15 20:57:50
+ * @LastEditTime: 2026-10-17 19:16:28
  * @Description: 字段级常用信息快捷填入测试
  */
 
@@ -21,7 +21,7 @@ void main() {
         lastModified: '2026-10-15T10:00:00',
       );
 
-  // 录入样式(新增页/对话框)
+  // 编辑样式(新增页/对话框)
   Widget formRow({
     required TextEditingController controller,
     required PresetKind kind,
