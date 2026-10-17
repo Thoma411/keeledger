@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-15 20:56:29
+ * @LastEditTime: 2026-10-17 17:44:41
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -59,9 +59,14 @@ Widget readOnlyFieldValue(
   String text, {
   TextStyle? style,
   int? maxLines,
+  Widget? suffixIcon,
 }) {
   return InputDecorator(
-    decoration: accountFieldDecoration(context, readOnly: true),
+    decoration: accountFieldDecoration(
+      context,
+      readOnly: true,
+      suffixIcon: suffixIcon,
+    ),
     child: Text(
       text,
       style: style,
@@ -652,6 +657,31 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
     widget.onToggleVisible,
   );
 
+  // 复制按钮(仅只读态)
+  Widget _copyButton(BuildContext context) => compactSuffixIcon(
+    Icon(
+      Icons.copy_all_rounded,
+      size: 18,
+      color: Theme.of(context).colorScheme.onSurfaceVariant,
+    ),
+    () {
+      Clipboard.setData(ClipboardData(text: widget.controller.text));
+      MessageUtil.show(context, "密码已复制");
+    },
+  );
+
+  // 后缀图标(快捷填入/显示切换/复制)
+  Widget _buildSuffix(BuildContext context) {
+    final List<Widget> buttons = [
+      ?suffixFillButton(context),
+      _eyeButton(),
+      if (!widget.isEditing) _copyButton(context),
+    ];
+    return buttons.length == 1
+        ? buttons.first
+        : Row(mainAxisSize: MainAxisSize.min, children: buttons);
+  }
+
   @override
   Widget build(BuildContext context) {
     final Widget? chips = fillChips(context);
@@ -688,8 +718,6 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
         ),
       );
     }
-    // 快捷填入入口仅编辑态出现
-    final Widget? fill = suffixFillButton(context);
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 8.0),
       child: Column(
@@ -697,57 +725,32 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
         children: [
           fieldLabel(context, "密码"),
           const SizedBox(height: 4),
-          Row(
-            children: [
-              Expanded(
-                child: widget.isEditing
-                    ? TextFormField(
-                        controller: widget.controller,
-                        // 闭眼时输入框也是遮蔽状态
-                        obscureText: !widget.isVisible,
-                        style: const TextStyle(
-                          fontSize: AppText.body,
-                          fontFamily: 'Consolas',
-                        ),
-                        decoration: const InputDecoration(
-                          isDense: true,
-                          contentPadding: EdgeInsets.symmetric(vertical: 8),
-                        ),
-                      )
-                    : Text(
-                        widget.isVisible ? widget.controller.text : "••••••••",
-                        style: const TextStyle(
-                          fontSize: AppText.body,
-                          fontWeight: FontWeight.w500,
-                          fontFamily: 'Consolas',
-                        ),
-                      ),
+          if (!widget.isEditing)
+            readOnlyFieldValue(
+              context,
+              // 闭眼时输入框也是遮蔽状态
+              widget.isVisible ? widget.controller.text : "••••••••",
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontWeight: FontWeight.w500,
+                fontFamily: 'Consolas',
               ),
-              ?fill,
-              IconButton(
-                icon: Icon(
-                  widget.isVisible ? Icons.visibility : Icons.visibility_off,
-                  size: 18,
-                ),
-                onPressed: widget.onToggleVisible,
+              maxLines: 1,
+              suffixIcon: _buildSuffix(context),
+            )
+          else
+            TextFormField(
+              controller: widget.controller,
+              obscureText: !widget.isVisible,
+              style: const TextStyle(
+                fontSize: AppText.body,
+                fontFamily: 'Consolas',
               ),
-              // 复制按钮仅只读态显示
-              if (!widget.isEditing)
-                IconButton(
-                  icon: Icon(
-                    Icons.copy_all_rounded,
-                    size: 18,
-                    color: Theme.of(context).colorScheme.onSurfaceVariant,
-                  ),
-                  onPressed: () {
-                    Clipboard.setData(
-                      ClipboardData(text: widget.controller.text),
-                    );
-                    MessageUtil.show(context, "密码已复制");
-                  },
-                ),
-            ],
-          ),
+              decoration: accountFieldDecoration(
+                context,
+                suffixIcon: _buildSuffix(context),
+              ),
+            ),
           ?chips,
         ],
       ),
