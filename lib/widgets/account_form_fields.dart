@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-17 19:17:10
+ * @LastEditTime: 2026-10-18 00:01:33
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -33,7 +33,7 @@ InputDecoration accountFieldDecoration(
     hintText: hint,
     suffixIcon: suffixIcon,
     // 限制图标栏尺寸防止后缀图标把该行撑高
-    suffixIconConstraints: _denseSuffixIconConstraints,
+    suffixIconConstraints: _readOnlySuffixIconConstraints,
     filled: !readOnly, // 只读态不铺底色
   );
 }
@@ -180,16 +180,16 @@ mixin PresetFillMixin<T extends StatefulWidget> on State<T> {
   }
 
   // 右侧入口
-  Widget? suffixFillButton(BuildContext context, {bool dense = false}) {
+  Widget? suffixFillButton(BuildContext context, {bool readOnlyStyle = false}) {
     if (!_showFill) return null;
     return compactSuffixIcon(
       Icon(
         Icons.expand_more,
-        size: dense ? _denseIconSize : _normalIconSize,
+        size: readOnlyStyle ? _readOnlyIconSize : _editIconSize,
         color: Theme.of(context).colorScheme.primary,
       ),
       () => setState(() => _expanded = !_expanded),
-      size: dense ? _denseIconButtonSize : _normalIconButtonSize,
+      size: readOnlyStyle ? _readOnlyIconButtonSize : _editIconButtonSize,
     );
   }
 
@@ -236,14 +236,14 @@ class AccountRequiredFields extends StatelessWidget {
           label: "平台名称（必填）",
           controller: platform,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
         ),
         const FieldHint("以下至少填写一项"),
         AccountFieldRow(
           label: "用户昵称",
           controller: name,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
           presetKind: PresetKind.nickname,
           presets: presets,
         ),
@@ -251,14 +251,14 @@ class AccountRequiredFields extends StatelessWidget {
           label: "用户ID",
           controller: userId,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
         ),
         AccountPasswordRow(
           controller: pswd,
           isEditing: true,
           isVisible: passwordVisible,
           onToggleVisible: onTogglePassword,
-          floatingLabel: true,
+          editingStyle: true,
           presetKind: PresetKind.password,
           presets: presets,
         ),
@@ -266,7 +266,7 @@ class AccountRequiredFields extends StatelessWidget {
           label: "绑定邮箱",
           controller: email,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
           presetKind: PresetKind.email,
           presets: presets,
         ),
@@ -274,7 +274,7 @@ class AccountRequiredFields extends StatelessWidget {
           label: "绑定手机",
           controller: phone,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
           presetKind: PresetKind.phone,
           presets: presets,
           inputFormatters: [
@@ -325,7 +325,7 @@ class AccountOptionalFields extends StatelessWidget {
           label: "网址",
           controller: url,
           isEditing: true,
-          floatingLabel: true,
+          editingStyle: true,
         ),
         AccountTagsRow(
           tags: tagList,
@@ -361,7 +361,7 @@ class AccountOptionalFields extends StatelessWidget {
           controller: notes,
           isEditing: true,
           maxLines: 5,
-          floatingLabel: true,
+          editingStyle: true,
         ),
       ],
     );
@@ -374,14 +374,14 @@ class AccountOptionalFields extends StatelessWidget {
       controller: birth,
       isEditing: true,
       isDateField: true,
-      floatingLabel: true,
+      editingStyle: true,
     );
     final Widget signupField = AccountFieldRow(
       label: "注册日期",
       controller: signup,
       isEditing: true,
       isDateField: true,
-      floatingLabel: true,
+      editingStyle: true,
     );
     // 字号过大时显示为两行
     if (MediaQuery.textScalerOf(context).scale(1.0) > 1.0) {
@@ -428,7 +428,7 @@ class AccountFieldRow extends StatefulWidget {
   final bool isEditing;
   final bool isDateField;
   // true=编辑样式; false=只读样式
-  final bool floatingLabel;
+  final bool editingStyle;
   final int maxLines;
   final List<TextInputFormatter>? inputFormatters;
   final PresetKind? presetKind; // 需要快捷填入时传入类型
@@ -440,7 +440,7 @@ class AccountFieldRow extends StatefulWidget {
     required this.controller,
     required this.isEditing,
     this.isDateField = false,
-    this.floatingLabel = false,
+    this.editingStyle = false,
     this.maxLines = 1,
     this.inputFormatters,
     this.presetKind,
@@ -468,7 +468,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
     final bool isMultiline = widget.maxLines > 1;
     final Widget? chips = fillChips(context);
     // 编辑样式
-    if (widget.floatingLabel) {
+    if (widget.editingStyle) {
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Column(
@@ -487,8 +487,8 @@ class _AccountFieldRowState extends State<AccountFieldRow>
                 labelText: widget.label,
                 isDense: true,
                 alignLabelWithHint: isMultiline,
-                suffixIcon: _buildSuffix(context, dense: false),
-                suffixIconConstraints: _suffixIconConstraints,
+                suffixIcon: _buildSuffix(context, readOnlyStyle: false),
+                suffixIconConstraints: _editSuffixIconConstraints,
               ),
             ),
             ?chips,
@@ -526,7 +526,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
               ),
               decoration: accountFieldDecoration(
                 context,
-                suffixIcon: _buildSuffix(context, dense: true),
+                suffixIcon: _buildSuffix(context, readOnlyStyle: true),
               ),
             ),
           ?chips,
@@ -536,12 +536,15 @@ class _AccountFieldRowState extends State<AccountFieldRow>
   }
 
   // 后缀图标
-  Widget? _buildSuffix(BuildContext context, {required bool dense}) {
-    final Widget? fill = suffixFillButton(context, dense: dense);
+  Widget? _buildSuffix(BuildContext context, {required bool readOnlyStyle}) {
+    final Widget? fill = suffixFillButton(
+      context,
+      readOnlyStyle: readOnlyStyle,
+    );
     final List<Widget> buttons = [
       ?fill,
       if (widget.isDateField)
-        _dateButton(context, widget.controller, dense: dense),
+        _dateButton(context, widget.controller, readOnlyStyle: readOnlyStyle),
     ];
     if (buttons.isEmpty) return null;
     if (buttons.length == 1) return buttons.first;
@@ -560,16 +563,16 @@ class _AccountFieldRowState extends State<AccountFieldRow>
   Widget _dateButton(
     BuildContext context,
     TextEditingController controller, {
-    required bool dense,
+    required bool readOnlyStyle,
   }) {
     return compactSuffixIcon(
       Icon(
         Icons.calendar_today,
-        size: dense ? _denseIconSize : 16,
+        size: readOnlyStyle ? _readOnlyIconSize : 16,
         color: Theme.of(context).colorScheme.primary,
       ),
       () => _pickDate(context, controller),
-      size: dense ? _denseIconButtonSize : _normalIconButtonSize,
+      size: readOnlyStyle ? _readOnlyIconButtonSize : _editIconButtonSize,
     );
   }
 }
@@ -578,7 +581,7 @@ class _AccountFieldRowState extends State<AccountFieldRow>
 Widget compactSuffixIcon(
   Widget icon,
   VoidCallback onPressed, {
-  double size = _normalIconButtonSize,
+  double size = _editIconButtonSize,
 }) {
   return IconButton(
     icon: icon,
@@ -592,23 +595,24 @@ Widget compactSuffixIcon(
   );
 }
 
-const double _normalIconButtonSize = 32; // 编辑样式按钮热区大小
-const double _normalIconSize = 18; // 编辑样式按钮大小
-const double _denseIconButtonSize = 36; // 只读样式图标热区大小
-const double _denseIconSize = 16; // 只读样式图标大小
+// 后缀图标尺寸
+const double _editIconButtonSize = 32; // 编辑样式-热区
+const double _editIconSize = 18; // 编辑样式-图标
+const double _readOnlyIconButtonSize = 36; // 只读样式-热区
+const double _readOnlyIconSize = 16; // 只读样式-图标
 
 // 只读样式后缀图标位尺寸
-const BoxConstraints _denseSuffixIconConstraints = BoxConstraints(
-  minWidth: _denseIconButtonSize,
-  minHeight: _denseIconButtonSize,
-  maxHeight: _denseIconButtonSize,
+const BoxConstraints _readOnlySuffixIconConstraints = BoxConstraints(
+  minWidth: _readOnlyIconButtonSize,
+  minHeight: _readOnlyIconButtonSize,
+  maxHeight: _readOnlyIconButtonSize,
 );
 
-// 后缀图标位尺寸
-const BoxConstraints _suffixIconConstraints = BoxConstraints(
-  minWidth: 32,
-  minHeight: 32,
-  maxHeight: 32,
+// 编辑样式后缀图标位尺寸
+const BoxConstraints _editSuffixIconConstraints = BoxConstraints(
+  minWidth: _editIconButtonSize,
+  minHeight: _editIconButtonSize,
+  maxHeight: _editIconButtonSize,
 );
 
 // 日历选择器
@@ -639,7 +643,7 @@ class AccountPasswordRow extends StatefulWidget {
   final bool isVisible;
   final VoidCallback onToggleVisible;
   // true=编辑样式; false=只读样式
-  final bool floatingLabel;
+  final bool editingStyle;
   final PresetKind? presetKind; // 需要快捷填入时传入类型
   final List<Preset> presets;
 
@@ -649,7 +653,7 @@ class AccountPasswordRow extends StatefulWidget {
     required this.isEditing,
     required this.isVisible,
     required this.onToggleVisible,
-    this.floatingLabel = false,
+    this.editingStyle = false,
     this.presetKind,
     this.presets = const [],
   });
@@ -671,36 +675,36 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
   bool get presetFillEnabled => widget.isEditing;
 
   // 显示/隐藏切换按钮
-  Widget _eyeButton({required bool dense}) => compactSuffixIcon(
+  Widget _eyeButton({required bool readOnlyStyle}) => compactSuffixIcon(
     Icon(
       widget.isVisible ? Icons.visibility : Icons.visibility_off,
-      size: dense ? _denseIconSize : _normalIconSize,
+      size: readOnlyStyle ? _readOnlyIconSize : _editIconSize,
     ),
     widget.onToggleVisible,
-    size: dense ? _denseIconButtonSize : _normalIconButtonSize,
+    size: readOnlyStyle ? _readOnlyIconButtonSize : _editIconButtonSize,
   );
 
   // 复制按钮(仅只读态)
-  Widget _copyButton(BuildContext context, {required bool dense}) =>
+  Widget _copyButton(BuildContext context, {required bool readOnlyStyle}) =>
       compactSuffixIcon(
         Icon(
           Icons.copy_all_rounded,
-          size: dense ? _denseIconSize : _normalIconSize,
+          size: readOnlyStyle ? _readOnlyIconSize : _editIconSize,
           color: Theme.of(context).colorScheme.onSurfaceVariant,
         ),
         () {
           Clipboard.setData(ClipboardData(text: widget.controller.text));
           MessageUtil.show(context, "密码已复制");
         },
-        size: dense ? _denseIconButtonSize : _normalIconButtonSize,
+        size: readOnlyStyle ? _readOnlyIconButtonSize : _editIconButtonSize,
       );
 
-  // 后缀图标(快捷填入/复制 在左, 显示切换永远最右)
-  Widget _buildSuffix(BuildContext context, {required bool dense}) {
+  // 后缀图标
+  Widget _buildSuffix(BuildContext context, {required bool readOnlyStyle}) {
     final List<Widget> buttons = [
-      ?suffixFillButton(context, dense: dense),
-      if (!widget.isEditing) _copyButton(context, dense: dense),
-      _eyeButton(dense: dense),
+      ?suffixFillButton(context, readOnlyStyle: readOnlyStyle),
+      if (!widget.isEditing) _copyButton(context, readOnlyStyle: readOnlyStyle),
+      _eyeButton(readOnlyStyle: readOnlyStyle),
     ];
     return buttons.length == 1
         ? buttons.first
@@ -711,9 +715,9 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
   Widget build(BuildContext context) {
     final Widget? chips = fillChips(context);
     // 编辑样式
-    if (widget.floatingLabel) {
+    if (widget.editingStyle) {
       final Widget? fill = suffixFillButton(context);
-      final Widget eye = _eyeButton(dense: false);
+      final Widget eye = _eyeButton(readOnlyStyle: false);
       return Padding(
         padding: const EdgeInsets.symmetric(vertical: 6.0),
         child: Column(
@@ -735,7 +739,7 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
                         mainAxisSize: MainAxisSize.min,
                         children: [fill, eye],
                       ),
-                suffixIconConstraints: _suffixIconConstraints,
+                suffixIconConstraints: _editSuffixIconConstraints,
               ),
             ),
             ?chips,
@@ -761,7 +765,7 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
                 fontFamily: 'Consolas',
               ),
               maxLines: 1,
-              suffixIcon: _buildSuffix(context, dense: true),
+              suffixIcon: _buildSuffix(context, readOnlyStyle: true),
             )
           else
             TextFormField(
@@ -773,7 +777,7 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
               ),
               decoration: accountFieldDecoration(
                 context,
-                suffixIcon: _buildSuffix(context, dense: true),
+                suffixIcon: _buildSuffix(context, readOnlyStyle: true),
               ),
             ),
           ?chips,

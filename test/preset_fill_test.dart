@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-15 00:33:12
- * @LastEditTime: 2026-10-17 19:16:28
+ * @LastEditTime: 2026-10-17 23:52:44
  * @Description: 字段级常用信息快捷填入测试
  */
 
@@ -36,7 +36,7 @@ void main() {
                 isEditing: true,
                 isVisible: false,
                 onToggleVisible: () {},
-                floatingLabel: true,
+                editingStyle: true,
                 presetKind: kind,
                 presets: presets,
               )
@@ -44,7 +44,7 @@ void main() {
                 label: "字段",
                 controller: controller,
                 isEditing: true,
-                floatingLabel: true,
+                editingStyle: true,
                 presetKind: kind,
                 presets: presets,
               ),
