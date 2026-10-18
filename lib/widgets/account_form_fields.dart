@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-18 17:23:16
+ * @LastEditTime: 2026-10-18 18:10:24
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -791,6 +791,16 @@ class _AccountPasswordRowState extends State<AccountPasswordRow>
   }
 }
 
+// 新标签输入框的胶囊描边
+OutlineInputBorder _tagPillBorder(BuildContext context, {Color? color}) {
+  return OutlineInputBorder(
+    borderRadius: const BorderRadius.all(Radius.circular(20)),
+    borderSide: BorderSide(
+      color: color ?? Theme.of(context).colorScheme.outlineVariant,
+    ),
+  );
+}
+
 // 标签行
 class AccountTagsRow extends StatelessWidget {
   final List<String> tags;
@@ -837,52 +847,74 @@ class AccountTagsRow extends StatelessWidget {
                     )
                   : null,
             ),
-            child: Wrap(
-              spacing: 8,
-              runSpacing: 8,
-              children: [
-                ...tags.map(
-                  (tag) => InputChip(
-                    label: Text(
-                      tag,
-                      style: const TextStyle(fontSize: AppText.label),
-                    ),
-                    shape: AppRadius.pill,
-                    onDeleted: isEditing
-                        ? () => onChanged([...tags]..remove(tag))
-                        : null,
-                    onPressed: !isEditing
-                        ? () => onTagClicked?.call(tag)
-                        : null,
-                    deleteIcon: const Icon(Icons.cancel, size: 14),
-                    materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  ),
-                ),
-                if (isEditing)
-                  SizedBox(
-                    width: 100,
-                    child: TextField(
-                      controller: controller,
-                      decoration: const InputDecoration(
-                        hintText: "新标签...",
-                        border: InputBorder.none,
-                        isDense: true,
-                        contentPadding: EdgeInsets.symmetric(vertical: 4),
+            // 标签块统一用标准密度
+            child: Theme(
+              data: Theme.of(
+                context,
+              ).copyWith(visualDensity: VisualDensity.standard),
+              child: Wrap(
+                spacing: 8,
+                runSpacing: 8,
+                crossAxisAlignment: WrapCrossAlignment.center,
+                children: [
+                  ...tags.map(
+                    (tag) => InputChip(
+                      label: Text(
+                        tag,
+                        style: const TextStyle(fontSize: AppText.label),
                       ),
-                      style: const TextStyle(fontSize: AppText.sub),
-                      onSubmitted: (val) {
-                        final List<String>? next = appendTag(
-                          context,
-                          tags,
-                          val,
-                        );
-                        if (next == null) return;
-                        controller.clear();
-                        onChanged(next);
-                      },
+                      shape: AppRadius.pill,
+                      onDeleted: isEditing
+                          ? () => onChanged([...tags]..remove(tag))
+                          : null,
+                      onPressed: !isEditing
+                          ? () => onTagClicked?.call(tag)
+                          : null,
+                      deleteIcon: const Icon(Icons.cancel, size: 14),
+                      materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
                     ),
                   ),
-              ],
+                  if (isEditing)
+                    SizedBox(
+                      width: 110,
+                      child: TextField(
+                        controller: controller,
+                        textAlignVertical: TextAlignVertical.center,
+                        decoration: InputDecoration(
+                          hintText: "新标签...",
+                          hintStyle: TextStyle(
+                            fontSize: AppText.label,
+                            color: Theme.of(
+                              context,
+                            ).colorScheme.onSurfaceVariant,
+                          ),
+                          isDense: true,
+                          contentPadding: const EdgeInsets.symmetric(
+                            horizontal: 10,
+                            vertical: 8.5,
+                          ),
+                          border: _tagPillBorder(context),
+                          enabledBorder: _tagPillBorder(context),
+                          focusedBorder: _tagPillBorder(
+                            context,
+                            color: Theme.of(context).colorScheme.primary,
+                          ),
+                        ),
+                        style: const TextStyle(fontSize: AppText.label),
+                        onSubmitted: (val) {
+                          final List<String>? next = appendTag(
+                            context,
+                            tags,
+                            val,
+                          );
+                          if (next == null) return;
+                          controller.clear();
+                          onChanged(next);
+                        },
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
           if (isEditing && controller.text.isNotEmpty)

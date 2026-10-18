@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-06 16:37:04
- * @LastEditTime: 2026-10-18 17:13:29
+ * @LastEditTime: 2026-10-18 18:10:42
  * @Description: 共享表单字段部件测试(标签建议/日期并排)
  */
 
@@ -35,6 +35,55 @@ void main() {
     expect(controller.text, isEmpty);
     expect(find.text('金融'), findsOneWidget); // 已变成标签 chip
   });
+
+  // 新标签输入框要与已存在的标签 chip 等高
+  // 用 compact 密度复刻桌面端: 密度会压缩输入框内容高度, 但 chip 不受影响
+  for (final VisualDensity density in [
+    VisualDensity.standard,
+    VisualDensity.compact,
+  ]) {
+    testWidgets('标签输入框与标签 chip 等高(密度 $density)', (tester) async {
+      final controller = TextEditingController();
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          theme: ThemeData(visualDensity: density),
+          home: Scaffold(
+            body: SingleChildScrollView(
+              child: AccountTagsRow(
+                tags: const ['金融'],
+                controller: controller,
+                isEditing: true,
+                globalTags: const {},
+                onChanged: (_) {},
+              ),
+            ),
+          ),
+        ),
+      );
+
+      final double chip = tester.getSize(find.byType(InputChip).first).height;
+      final double input = tester.getSize(find.byType(TextField)).height;
+      expect(input, chip, reason: '输入框($input)应与标签 chip($chip)等高');
+
+      // 与 chip 同款胶囊: 全圆角描边
+      final InputBorder? border = tester
+          .widget<TextField>(find.byType(TextField))
+          .decoration
+          ?.border;
+      expect(border, isA<OutlineInputBorder>());
+      final OutlineInputBorder pill = border! as OutlineInputBorder;
+      expect(pill.borderRadius.topLeft.x, greaterThanOrEqualTo(chip / 2));
+      expect(
+        pill.borderSide.color,
+        Theme.of(
+          tester.element(find.byType(TextField)),
+        ).colorScheme.outlineVariant,
+        reason: '描边色应与 chip 一致',
+      );
+    });
+  }
 
   // 生日/注册日期: 常规字号并排, 字号过大时回落两行
   testWidgets('生日与注册日期常规字号并排, 大号字体回落两行', (tester) async {
