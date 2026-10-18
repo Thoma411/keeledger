@@ -1,23 +1,18 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-09 22:58:20
- * @LastEditTime: 2026-10-09 23:27:41
+ * @LastEditTime: 2026-10-18 23:02:57
  * @Description: 常用信息测试
  */
 
-import 'dart:io';
 import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:keeledger/models/preset.dart';
-import 'package:keeledger/services/auth_service.dart';
 import 'package:keeledger/services/security_service.dart';
 import 'package:keeledger/services/settings_service.dart';
 import 'package:keeledger/services/storage_service.dart';
+import 'helpers/vault_fixture.dart';
 
 void main() {
   group('PresetKind', () {
@@ -102,30 +97,7 @@ void main() {
   });
 
   group('存取', () {
-    late Directory tempDir;
-
-    setUpAll(() {
-      sqfliteFfiInit();
-      databaseFactory = databaseFactoryFfi;
-    });
-
-    setUp(() async {
-      tempDir = await Directory.systemTemp.createTemp('keeledger_preset_');
-      StorageService.overrideDbPath = p.join(tempDir.path, 'test_vault.db');
-      SharedPreferences.setMockInitialValues({});
-      await SettingsService().init();
-      SecurityService().clearKeys();
-      await AuthService().createVault('password123');
-    });
-
-    tearDown(() async {
-      await StorageService().closeDatabase();
-      StorageService.overrideDbPath = null;
-      SecurityService().clearKeys();
-      if (tempDir.existsSync()) {
-        await tempDir.delete(recursive: true);
-      }
-    });
+    useVaultFixture(tempPrefix: 'keeledger_preset_');
 
     Preset sample(String id, String name) => Preset(
       id: id,

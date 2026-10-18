@@ -1,11 +1,10 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-23 22:41:37
- * @LastEditTime: 2026-09-23 23:24:17
+ * @LastEditTime: 2026-10-18 23:01:50
  * @Description: 图标仓库测试
  */
 
-import 'dart:io';
 import 'dart:typed_data';
 import 'dart:ui' as ui;
 
@@ -14,8 +13,7 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:keeledger/models/account.dart';
 import 'package:keeledger/services/icon_store.dart';
 import 'package:keeledger/services/storage_service.dart';
-import 'package:path/path.dart' as p;
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
+import 'helpers/vault_fixture.dart';
 
 Account _account({
   required String id,
@@ -50,17 +48,14 @@ Future<Uint8List> _png(int size, int color) async {
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
-  late Directory tempDir;
+  useVaultFixture(
+    tempPrefix: 'keeledger_icon_',
+    dbFileName: 'icon_vault.db',
+    createVault: false,
+  );
   late Uint8List pngA, pngB, pngC;
 
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
   setUp(() async {
-    tempDir = await Directory.systemTemp.createTemp('keeledger_icon_');
-    StorageService.overrideDbPath = p.join(tempDir.path, 'icon_vault.db');
     await StorageService().database; // 触发建表
     IconStore().reset();
     pngA = await _png(16, 0xFF112233);
@@ -69,12 +64,7 @@ void main() {
   });
 
   tearDown(() async {
-    await StorageService().closeDatabase();
-    StorageService.overrideDbPath = null;
     IconStore().reset();
-    if (tempDir.existsSync()) {
-      await tempDir.delete(recursive: true);
-    }
   });
 
   test('指定图标后仅该账户命中', () async {

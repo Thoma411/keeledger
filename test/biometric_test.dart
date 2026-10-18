@@ -1,24 +1,19 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-16 18:02:08
- * @LastEditTime: 2026-09-16 22:34:35
+ * @LastEditTime: 2026-10-18 23:02:03
  * @Description: 指纹解锁回归测试
  */
 
-import 'dart:io';
 import 'dart:convert';
 import 'dart:typed_data';
-
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:keeledger/services/auth_service.dart';
 import 'package:keeledger/services/biometric_keystore.dart';
 import 'package:keeledger/services/security_service.dart';
 import 'package:keeledger/services/settings_service.dart';
-import 'package:keeledger/services/storage_service.dart';
+import 'helpers/vault_fixture.dart';
 
 // 假硬件密钥存储: BK放在内存里, 并可模拟"用户取消/密钥失效"等情况
 class FakeBiometricKeyStore implements BiometricKeyStore {
@@ -55,39 +50,19 @@ class FakeBiometricKeyStore implements BiometricKeyStore {
 }
 
 void main() {
-  late Directory tempDir;
+  useVaultFixture(tempPrefix: 'keeledger_bio_', createVault: false);
   late AuthService auth;
   late FakeBiometricKeyStore store;
 
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
-
   setUp(() async {
-    // 每个用例使用独立临时数据库与内存配置
-    tempDir = await Directory.systemTemp.createTemp('keeledger_bio_');
-    StorageService.overrideDbPath = p.join(tempDir.path, 'test_vault.db');
-    SharedPreferences.setMockInitialValues({});
-    await SettingsService().init();
     // SharedPreferences 的 mock 实例会被缓存, 需显式清掉上一条用例残留的指纹配置
     await SettingsService().set('bio_enabled', 'false');
     await SettingsService().set('bio_edk', '');
-    SecurityService().clearKeys();
 
     auth = AuthService();
     store = FakeBiometricKeyStore();
     auth.bioKeyStore = store;
     await auth.createVault('password123'); // 建库并激活DK
-  });
-
-  tearDown(() async {
-    await StorageService().closeDatabase();
-    StorageService.overrideDbPath = null;
-    SecurityService().clearKeys();
-    if (tempDir.existsSync()) {
-      await tempDir.delete(recursive: true);
-    }
   });
 
   test('开启指纹解锁: 硬件写入 32 字节 BK, 本机写入可解出 DK 的封装', () async {

@@ -1,43 +1,27 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-17 00:51:34
- * @LastEditTime: 2026-09-17 13:59:26
+ * @LastEditTime: 2026-10-18 23:02:18
  * @Description: 锁定守卫判定测试
  */
 
-import 'dart:io';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:path/path.dart' as p;
-import 'package:shared_preferences/shared_preferences.dart';
-import 'package:sqflite_common_ffi/sqflite_ffi.dart';
 
 import 'package:keeledger/services/auth_service.dart';
 import 'package:keeledger/services/security_service.dart';
-import 'package:keeledger/services/settings_service.dart';
 import 'package:keeledger/services/storage_service.dart';
+import 'helpers/vault_fixture.dart';
 
 void main() {
-  late Directory tempDir;
-
-  setUpAll(() {
-    sqfliteFfiInit();
-    databaseFactory = databaseFactoryFfi;
-  });
+  useVaultFixture(
+    tempPrefix: 'keeledger_guard_',
+    dbFileName: 'guard_vault.db',
+    createVault: false,
+  );
 
   setUp(() async {
-    // 每个用例独立临时库 + 内存版配置
-    tempDir = await Directory.systemTemp.createTemp('keeledger_guard_');
-    StorageService.overrideDbPath = p.join(tempDir.path, 'guard_vault.db');
-    SharedPreferences.setMockInitialValues({});
-    await SettingsService().init();
-    SecurityService().clearKeys();
+    // 用例语义是"本地有库": 库文件存在但连接未打开
     await StorageService().closeDatabase();
-  });
-
-  tearDown(() async {
-    await StorageService().closeDatabase();
-    StorageService.overrideDbPath = null;
-    if (tempDir.existsSync()) tempDir.deleteSync(recursive: true);
   });
 
   test('锁定守卫: 本地无库时不需要回退解锁页', () async {
