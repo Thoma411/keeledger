@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-10-18 12:52:47
+ * @LastEditTime: 2026-10-18 23:32:37
  * @Description: 工具类
  */
 
@@ -205,10 +205,12 @@ class _OverlayToastState extends State<_OverlayToast>
 
   @override
   Widget build(BuildContext context) {
+    // 键盘唤起时整体上移
+    final double keyboard = MediaQuery.viewInsetsOf(context).bottom;
     return Positioned(
       left: 0,
       right: 0,
-      bottom: 0,
+      bottom: keyboard,
       child: SafeArea(
         child: Padding(
           padding: const EdgeInsets.all(16),
