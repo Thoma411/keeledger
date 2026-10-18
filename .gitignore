@@ -59,5 +59,4 @@ windows/flutter/generated_config/
 .env
 
 # Local-only files (not to be committed)
-test/security_gap_demo_test.dart
 design.md

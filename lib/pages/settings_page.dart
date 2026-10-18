@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 00:17:53
- * @LastEditTime: 2026-10-15 00:11:30
+ * @LastEditTime: 2026-10-19 00:22:48
  * @Description: 设置页
  */
 
@@ -56,7 +56,7 @@ class SettingsPageState extends State<SettingsPage> {
   final _iconSourceController = TextEditingController(); // 图标源模板输入框
   Timer? _iconSourceDebounce; // 图标源防抖落盘
 
-  static const String currentVersion = "v1.5.1";
+  static const String currentVersion = "v1.6.0";
 
   @override
   void initState() {
