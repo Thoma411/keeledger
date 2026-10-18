@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-18 00:01:33
+ * @LastEditTime: 2026-10-18 12:53:12
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -126,6 +126,7 @@ class PresetChips extends StatelessWidget {
                 style: TextStyle(fontSize: AppText.label, color: cs.primary),
               ),
               onPressed: () => onPick(p),
+              shape: AppRadius.pill,
               backgroundColor: cs.primary.withValues(alpha: 0.05),
             ),
         ],
@@ -843,7 +844,7 @@ class AccountTagsRow extends StatelessWidget {
                       tag,
                       style: const TextStyle(fontSize: AppText.label),
                     ),
-                    shape: const StadiumBorder(),
+                    shape: AppRadius.pill,
                     onDeleted: isEditing
                         ? () => onChanged([...tags]..remove(tag))
                         : null,

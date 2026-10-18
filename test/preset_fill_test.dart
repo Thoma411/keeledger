@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-15 00:33:12
- * @LastEditTime: 2026-10-17 23:52:44
+ * @LastEditTime: 2026-10-18 12:52:26
  * @Description: 字段级常用信息快捷填入测试
  */
 
@@ -83,6 +83,25 @@ void main() {
     // 填入后字段非空 -> 入口消失, 胶囊收起
     expect(find.byIcon(Icons.expand_more), findsNothing);
     expect(find.text('Gmail_1'), findsNothing);
+  });
+
+  testWidgets('候选胶囊为胶囊形(与标签样式一致)', (tester) async {
+    final controller = TextEditingController();
+    addTearDown(controller.dispose);
+
+    await tester.pumpWidget(
+      formRow(
+        controller: controller,
+        kind: PresetKind.email,
+        presets: [preset('p1', 'Gmail_1', PresetKind.email, 'xxx1@gmail.com')],
+      ),
+    );
+
+    await tester.tap(find.byIcon(Icons.expand_more));
+    await tester.pump();
+
+    final ActionChip chip = tester.widget<ActionChip>(find.byType(ActionChip));
+    expect(chip.shape, isA<StadiumBorder>()); // 两端全圆角
   });
 
   testWidgets('字段已有内容时不提供入口', (tester) async {

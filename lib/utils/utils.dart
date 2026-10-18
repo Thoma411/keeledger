@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-02-22 14:30:59
- * @LastEditTime: 2026-10-14 00:38:25
+ * @LastEditTime: 2026-10-18 12:52:47
  * @Description: 工具类
  */
 
@@ -54,6 +54,9 @@ class FontScaleUtil {
 class AppRadius {
   // 下拉/弹出菜单圆角
   static const BorderRadius menu = BorderRadius.all(Radius.circular(12));
+
+  // 胶囊形(标签&常用信息候选)
+  static const StadiumBorder pill = StadiumBorder();
 }
 
 class MessageUtil {
