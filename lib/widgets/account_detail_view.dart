@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-06-24 23:04:48
- * @LastEditTime: 2026-10-15 18:08:36
+ * @LastEditTime: 2026-10-18 21:39:31
  * @Description: 账户信息详情页
  */
 
@@ -455,6 +455,11 @@ class _AccountDetailViewState extends State<AccountDetailView> {
       // 自动保存标签输入框中未回车的内容
       if (_tagsController.text.trim().isNotEmpty) {
         _addNewTag(_tagsController.text);
+      }
+      // 平台名称是唯一必填项
+      if (_platformController.text.trim().isEmpty) {
+        AppDialogs.showInfo(context, title: "保存失败", message: "平台名称不能为空。");
+        return;
       }
       // 执行保存逻辑
       if (_formKey.currentState!.validate()) {
