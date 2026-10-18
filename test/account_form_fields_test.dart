@@ -1,12 +1,13 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-06 16:37:04
- * @LastEditTime: 2026-10-18 14:30:36
+ * @LastEditTime: 2026-10-18 17:13:29
  * @Description: 共享表单字段部件测试(标签建议/日期并排)
  */
 
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:keeledger/models/preset.dart';
 import 'package:keeledger/widgets/account_form_fields.dart';
 
 void main() {
@@ -48,6 +49,90 @@ void main() {
       tester.getCenter(find.text('生日')).dy,
       lessThan(tester.getCenter(find.text('注册日期')).dy),
     );
+  });
+
+  // 空字段出现 ▾ 快捷填入按钮时, 字段框不能变高
+  // 用 0.85 倍字号复现: 文字行高变矮后, 36 的图标热区曾把空字段顶高
+  testWidgets('空字段出现快捷填入按钮时字段框高度不变', (tester) async {
+    Future<double> boxHeight({
+      required bool emptyWithFill,
+      required double textScale,
+    }) async {
+      final controller = TextEditingController(
+        text: emptyWithFill ? '' : 'me@corp.com',
+      );
+      addTearDown(controller.dispose);
+
+      await tester.pumpWidget(
+        MaterialApp(
+          builder: (context, child) => MediaQuery(
+            data: MediaQuery.of(
+              context,
+            ).copyWith(textScaler: TextScaler.linear(textScale)),
+            child: child!,
+          ),
+          home: Scaffold(
+            body: Column(
+              children: [
+                AccountFieldRow(
+                  label: "绑定邮箱",
+                  controller: controller,
+                  isEditing: true,
+                  presetKind: emptyWithFill ? PresetKind.email : null,
+                  presets: emptyWithFill
+                      ? [
+                          Preset(
+                            id: 'p1',
+                            name: 'Gmail_1',
+                            kind: PresetKind.email,
+                            value: 'a@b.com',
+                            lastModified: '2026-10-18T10:00:00',
+                          ),
+                        ]
+                      : const [],
+                ),
+              ],
+            ),
+          ),
+        ),
+      );
+      await tester.pump();
+      // 真正绘制底色/边框的盒子(_InputBorderPainter 所在的 CustomPaint),
+      // 它才是肉眼看到的"输入框高度"; 外层 InputDecorator 可能被其他约束撑大而不反映真实绘制
+      for (final Element e
+          in find
+              .descendant(
+                of: find.byType(InputDecorator).first,
+                matching: find.byType(CustomPaint),
+              )
+              .evaluate()) {
+        final RenderObject? ro = e.renderObject;
+        if (ro is RenderBox && ro.hasSize && ro.size.width > 100) {
+          return ro.size.height;
+        }
+      }
+      return -1;
+    }
+
+    for (final double scale in [1.0, 0.85]) {
+      final double withFill = await boxHeight(
+        emptyWithFill: true,
+        textScale: scale,
+      );
+      // 有候选时 ▾ 确实出现了
+      expect(find.byType(IconButton), findsOneWidget);
+      final double withoutFill = await boxHeight(
+        emptyWithFill: false,
+        textScale: scale,
+      );
+      expect(find.byType(IconButton), findsNothing);
+
+      expect(
+        withFill,
+        withoutFill,
+        reason: '字号 ${scale}x 时: 有 ▾ 的字段框不应更高($withFill vs $withoutFill)',
+      );
+    }
   });
 }
 

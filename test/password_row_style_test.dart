@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-17 17:41:16
- * @LastEditTime: 2026-10-17 19:16:34
+ * @LastEditTime: 2026-10-18 17:24:26
  * @Description: 详情页密码行样式测试
  */
 
@@ -56,8 +56,8 @@ void main() {
     // 编辑态不显示复制按钮
     expect(find.byIcon(Icons.copy_all_rounded), findsNothing);
 
-    // B 样式: 图标小一号(16)但热区 36, 不撑高行
-    expect(tester.getSize(find.byType(IconButton)).height, 36);
+    // B 样式: 图标小一号(16), 热区 32(必须 ≤ 内容高度, 否则会顶高行)
+    expect(tester.getSize(find.byType(IconButton)).height, 32);
     expect(tester.getSize(find.byIcon(Icons.visibility_off)).height, 16);
   });
 
@@ -96,8 +96,8 @@ void main() {
 
     // 眼睛 + 复制两个图标并排且不溢出
     expect(find.byType(IconButton), findsNWidgets(2));
-    expect(tester.getSize(find.byType(IconButton).at(0)).height, 36);
-    expect(tester.getSize(find.byType(IconButton).at(1)).height, 36);
+    expect(tester.getSize(find.byType(IconButton).at(0)).height, 32);
+    expect(tester.getSize(find.byType(IconButton).at(1)).height, 32);
 
     // 顺序与编辑态/新建页对齐: 眼睛永远在最右
     final double copyX = tester

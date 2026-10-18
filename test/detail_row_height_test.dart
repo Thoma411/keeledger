@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-09-18 23:52:02
- * @LastEditTime: 2026-10-17 18:00:07
+ * @LastEditTime: 2026-10-18 17:24:09
  * @Description: 详情页信息行高度一致性回归测试
  */
 
@@ -42,7 +42,11 @@ void main() {
     lastModified: '2026-09-18T00:00:00.000Z',
   );
 
-  Future<void> pumpDetail(WidgetTester tester, Account acc) async {
+  Future<void> pumpDetail(
+    WidgetTester tester,
+    Account acc, {
+    double textScale = 1.0,
+  }) async {
     // 画布够大, 避免 SliverList 懒加载导致下部的行没被构建
     tester.view.physicalSize = const Size(1200, 2400);
     tester.view.devicePixelRatio = 1.0;
@@ -50,6 +54,12 @@ void main() {
     addTearDown(tester.view.resetDevicePixelRatio);
     await tester.pumpWidget(
       MaterialApp(
+        builder: (context, child) => MediaQuery(
+          data: MediaQuery.of(
+            context,
+          ).copyWith(textScaler: TextScaler.linear(textScale)),
+          child: child!,
+        ),
         home: Scaffold(
           body: AccountDetailView(
             key: UniqueKey(), // 强制重建, 避免复用上一次的编辑态状态
@@ -85,21 +95,25 @@ void main() {
   // 密码行已改为样式B(图标收进 suffixIcon), 与普通信息行一样参与等高断言
   const List<String> infoLabels = ['用户昵称', '用户ID', '绑定邮箱', '密码', '生日', '注册日期'];
 
-  testWidgets('详情页: 编辑态各行高度一致(含密码行与日期行)', (tester) async {
-    await pumpDetail(tester, buildAccount());
-    await tester.tap(find.text('编辑账户'));
-    await tester.pumpAndSettle();
+  // 字号会影响文字行高, 而行高 = max(文字行高 + padding, 图标热区),
+  // 所以必须在小字号下也验证, 否则图标把行撑高的问题会被掩盖
+  for (final double textScale in [1.0, 1.2, 0.85]) {
+    testWidgets('详情页: 编辑态各行高度一致(字号 ${textScale}x)', (tester) async {
+      await pumpDetail(tester, buildAccount(), textScale: textScale);
+      await tester.tap(find.text('编辑账户'));
+      await tester.pumpAndSettle();
 
-    final Map<String, double> heights = {
-      for (final String l in infoLabels) l: rowHeight(tester, l),
-    };
+      final Map<String, double> heights = {
+        for (final String l in infoLabels) l: rowHeight(tester, l),
+      };
 
-    expect(
-      heights.values.toSet().length,
-      1,
-      reason: '各信息行高度应一致(日期行不应更高): $heights',
-    );
-  });
+      expect(
+        heights.values.toSet().length,
+        1,
+        reason: '字号 ${textScale}x 下各信息行高度应一致: $heights',
+      );
+    });
+  }
 
   testWidgets('详情页: 只读态与编辑态行高一致', (tester) async {
     await pumpDetail(tester, buildAccount());

@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-18 14:29:09
+ * @LastEditTime: 2026-10-18 17:23:16
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -12,6 +12,7 @@ import 'package:intl/intl.dart';
 import '../models/preset.dart';
 import '../utils/app_text.dart';
 import '../utils/utils.dart';
+import 'account_ui_utils.dart';
 
 // 输入框装饰: 只读态与编辑态共用, 保证两态行高一致
 InputDecoration accountFieldDecoration(
@@ -22,7 +23,8 @@ InputDecoration accountFieldDecoration(
 }) {
   return InputDecoration(
     isDense: true,
-    contentPadding: const EdgeInsets.symmetric(vertical: 8),
+    // 上下12, 保证内容高度恒大于后缀图标热区
+    contentPadding: const EdgeInsets.symmetric(vertical: 12),
     border: InputBorder.none,
     focusedBorder: UnderlineInputBorder(
       borderSide: BorderSide(
@@ -597,13 +599,14 @@ Widget compactSuffixIcon(
 }
 
 // 后缀图标尺寸
-const double _editIconButtonSize = 32; // 编辑样式-热区
 const double _editIconSize = 18; // 编辑样式-图标
-const double _readOnlyIconButtonSize = 36; // 只读样式-热区
+const double _editIconButtonSize = 32; // 编辑样式-热区
 const double _readOnlyIconSize = 16; // 只读样式-图标
+// 只读样式-热区
+final double _readOnlyIconButtonSize = AccountUiUtils.isTouchDevice() ? 40 : 32;
 
 // 只读样式后缀图标位尺寸
-const BoxConstraints _readOnlySuffixIconConstraints = BoxConstraints(
+final BoxConstraints _readOnlySuffixIconConstraints = BoxConstraints(
   minWidth: _readOnlyIconButtonSize,
   minHeight: _readOnlyIconButtonSize,
   maxHeight: _readOnlyIconButtonSize,
