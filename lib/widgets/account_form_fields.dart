@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-04 19:34:07
- * @LastEditTime: 2026-10-18 12:53:12
+ * @LastEditTime: 2026-10-18 14:29:09
  * @Description: 账户表单字段(详情页与新账户页共用)
  */
 
@@ -921,6 +921,7 @@ class AccountTagsRow extends StatelessWidget {
                   controller.clear(); // 采纳建议后清空输入框
                   onChanged(next);
                 },
+                shape: AppRadius.pill,
                 backgroundColor: Theme.of(
                   context,
                 ).colorScheme.primary.withValues(alpha: 0.05),

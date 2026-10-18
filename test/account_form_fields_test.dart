@@ -1,7 +1,7 @@
 /*
  * @Author: Thoma4
  * @Date: 2026-10-06 16:37:04
- * @LastEditTime: 2026-10-06 17:02:19
+ * @LastEditTime: 2026-10-18 14:30:36
  * @Description: 共享表单字段部件测试(标签建议/日期并排)
  */
 
@@ -22,6 +22,11 @@ void main() {
     await tester.enterText(find.byType(TextField), '金');
     await tester.pump();
     expect(find.text('金融'), findsOneWidget); // 仅建议 chip
+    // 建议 chip 与标签同款胶囊形
+    expect(
+      tester.widget<ActionChip>(find.byType(ActionChip)).shape,
+      isA<StadiumBorder>(),
+    );
 
     await tester.tap(find.text('金融'));
     await tester.pump();
