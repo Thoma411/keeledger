@@ -1,16 +1,26 @@
 /*
  * @Author: Thoma4
- * @Date: 2026-08-14 22:15:36
- * @LastEditTime: 2026-08-30 22:59:05
- * @Description: SecurityService加密单元测试
+ * @Date: 2026-10-18 23:05:32
+ * @LastEditTime: 2026-10-18 23:16:16
+ * @Description: 加密测试(加解密单元 / 修复前无认证标签的缺口对照)
  */
 
 import 'dart:convert';
+import 'dart:typed_data';
 import 'package:flutter_test/flutter_test.dart';
+
 import 'package:keeledger/services/security_service.dart';
 
+// v1为修复前的存储格式(无前缀无Tag), v2为修复后的格式(带16字节认证标签)
+// 构造修复前的v1格式密文: Base64(IV + 密文), 无前缀无Tag
+String _makeV1(SecurityService sec, Uint8List key, String plain) {
+  final v2 = sec.encrypt(plain, key);
+  final body = base64.decode(v2.substring(3)); // 去掉"v2:"前缀
+  return base64.encode(body.sublist(0, body.length - 16)); // 去掉16字节Tag
+}
+
 void main() {
-  group('SecurityService 加密', () {
+  group('加密', () {
     test('AES-256-GCM 加密解密往返一致', () {
       final sec = SecurityService();
       final key = sec.generateRandomBytes(32);
@@ -88,6 +98,54 @@ void main() {
       final v1 = base64.encode(body.sublist(0, body.length - 16));
 
       expect(sec.decrypt(v1, wrongKey), isNot('legacy-data'));
+    });
+  });
+
+  // 这些用例故意用"修复前的逻辑路径"复现旧问题, 用于直观展示漏洞危害
+  group('演示: 修复前(无认证标签)的安全缺口', () {
+    test('旧行为: 错误密钥静默解出乱码, 不抛异常(无法区分密码对不对)', () {
+      final sec = SecurityService();
+      final realKey = sec.generateRandomBytes(32);
+      final wrongKey = sec.generateRandomBytes(32);
+
+      // 修复前的存储格式
+      final v1 = _makeV1(sec, realKey, '我的密码是 Secret123');
+      // 修复后的存储格式
+      final v2 = sec.encrypt('我的密码是 Secret123', realKey);
+
+      // ── 旧行为: 输入错误密钥, 应用"毫无反应"地返回乱码 ──
+      final garbage = sec.decrypt(v1, wrongKey);
+      expect(garbage, isNot('我的密码是 Secret123'));
+      // 关键: 它没有抛任何异常, 上层代码无法据此判断"密码错了"
+      // 后果: 若把乱码当结果存库, 就是当年"错误RK被接受→数据永久损坏"的根源
+
+      // ── 对比: 同一场景在v2下立即抛异常 ──
+      expect(() => sec.decrypt(v2, wrongKey), throwsA(isA<Object>()));
+    });
+
+    test('旧行为: 篡改密文一个字节, 静默解出乱码(数据损坏无法被察觉)', () {
+      final sec = SecurityService();
+      final key = sec.generateRandomBytes(32);
+
+      final v1 = _makeV1(sec, key, '银行卡余额: 1000000');
+      final v2 = sec.encrypt('银行卡余额: 1000000', key);
+
+      // 篡改v1密文最后一个字节(模拟磁盘损坏/恶意篡改)
+      final v1Bytes = base64.decode(v1).toList();
+      v1Bytes[v1Bytes.length - 1] ^= 0x01;
+      final tamperedV1 = base64.encode(v1Bytes);
+
+      // ── 旧行为: 解出乱码, 无任何报错(数据被破坏却浑然不知) ──
+      final corrupted = sec.decrypt(tamperedV1, key);
+      expect(corrupted, isNot('银行卡余额: 1000000'));
+
+      // ── 对比: v2格式下篡改立即抛异常 ──
+      final v2Bytes = base64.decode(v2.substring(3)).toList();
+      v2Bytes[v2Bytes.length - 1] ^= 0x01;
+      expect(
+        () => sec.decrypt('v2:${base64.encode(v2Bytes)}', key),
+        throwsA(isA<Object>()),
+      );
     });
   });
 }
