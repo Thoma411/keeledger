@@ -46,17 +46,34 @@ app.*.map.json
 android/.kotlin/
 android/build/
 
-# SQLite Database files (Local test data)
-*.db
-*.db-journal
-*.sqlite
-
 # Windows specific ephemeral files
 windows/flutter/ephemeral/
 windows/flutter/generated_config/
 
 # Sensitive configuration
 .env
+.env.*
+*.env
+
+# Signing / key material
+*.jks
+*.keystore
+*.p12
+*.pfx
+*.pem
+*.key
+key.properties
+keystore.properties
+*.mobileprovision
+google-services.json
+GoogleService-Info.plist
+
+# SQLite Database files
+*.db
+*.db-journal
+*.db-wal
+*.db-shm
+*.sqlite
 
 # Local-only files (not to be committed)
 design.md

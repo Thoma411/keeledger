@@ -12,14 +12,31 @@ android {
 
     signingConfigs {
         create("release") {
-            storeFile = file("upload-keystore.jks")
+            val keystoreFile = file("upload-keystore.jks")
             val envStorePassword = System.getenv("SIGNING_STORE_PASSWORD")
             val envKeyAlias = System.getenv("SIGNING_KEY_ALIAS")
             val envKeyPassword = System.getenv("SIGNING_KEY_PASSWORD")
-
-            storePassword = if (!envStorePassword.isNullOrEmpty()) envStorePassword else "123456"
-            keyAlias = if (!envKeyAlias.isNullOrEmpty()) envKeyAlias else "key"
-            keyPassword = if (!envKeyPassword.isNullOrEmpty()) envKeyPassword else "123456"
+            val isReleaseTask = gradle.startParameter.taskNames.any {
+                it.contains("release", ignoreCase = true)
+            }
+            if (isReleaseTask) {
+                val missing = mutableListOf<String>()
+                if (envStorePassword.isNullOrEmpty()) missing.add("SIGNING_STORE_PASSWORD")
+                if (envKeyAlias.isNullOrEmpty()) missing.add("SIGNING_KEY_ALIAS")
+                if (envKeyPassword.isNullOrEmpty()) missing.add("SIGNING_KEY_PASSWORD")
+                if (!keystoreFile.exists()) missing.add("android/app/upload-keystore.jks")
+                if (missing.isNotEmpty()) {
+                    throw GradleException(
+                        "Missing release signing material: ${missing.joinToString(", ")}. " +
+                            "Provide them via environment variables and place the keystore " +
+                            "at android/app/upload-keystore.jks (the file is not tracked)."
+                    )
+                }
+                storeFile = keystoreFile
+                storePassword = envStorePassword
+                keyAlias = envKeyAlias
+                keyPassword = envKeyPassword
+            }
         }
     }
 
